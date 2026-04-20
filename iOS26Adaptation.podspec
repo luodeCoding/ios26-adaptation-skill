@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'iOS26Adaptation'
-  s.version          = '1.0.0'
+  s.version          = '1.0.1'
   s.summary          = 'iOS 26 SDK adaptation guide, templates, and scanner'
   s.description      = <<-DESC
     iOS26Adaptation is a zero-runtime-impact documentation and tooling package
@@ -26,7 +26,8 @@ Pod::Spec.new do |s|
 
   s.resource_bundles = {
     'iOS26Adaptation' => [
-      'templates/**/*',
+      'templates/swift/*',
+      'templates/objc/*',
       'scripts/*',
       'docs/*',
       'examples/*',
