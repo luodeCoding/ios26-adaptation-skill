@@ -127,10 +127,10 @@ Reference the relevant templates from the installed bundle (or from `templates/`
 |----------|-------|-------------|---------|
 | Template | Swift | Objective-C | Purpose |
 |----------|-------|-------------|---------|
-| `UIApplication+Extension` | [Swift](./templates/swift/UIApplication+Extension.swift) | [OC](./templates/objc/UIApplication+Extension.h) | Unified window/navigation access |
+| `UIApplication+MainWindow` | [Swift](./templates/swift/UIApplication+MainWindow.swift) | [OC](./templates/objc/UIApplication+MainWindow.h) | Unified window/navigation access |
 | `SceneDelegate` | [Swift](./templates/swift/SceneDelegate.swift) | [OC](./templates/objc/SceneDelegate.h) | Window creation & lifecycle forwarding |
 | `AppDelegate+Setup` | [Swift](./templates/swift/AppDelegate+Setup.swift) | [OC](./templates/objc/AppDelegate+Setup.h) | Dual-path startup refactoring |
-| `NotificationAdapter` | [Swift](./templates/swift/NotificationAdapter.swift) | [OC](./templates/objc/NotificationAdapter.h) | iOS 26 notification options adapter |
+| `UNNotificationOptions+Adapter` | [Swift](./templates/swift/UNNotificationOptions+Adapter.swift) | [OC](./templates/objc/UNNotificationOptionsAdapter.h) | iOS 26 notification options adapter |
 
 > After CocoaPods installation, these templates are also available at `Pods/iOS26Adaptation/iOS26Adaptation.bundle/templates/`.
 

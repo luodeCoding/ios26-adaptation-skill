@@ -1,5 +1,5 @@
 //
-//  UIApplication+Extension.h
+//  UIApplication+MainWindow.h
 //  iOS 26 Adaptation Template
 //
 //  Unified window and navigation access interface for SceneDelegate architecture.

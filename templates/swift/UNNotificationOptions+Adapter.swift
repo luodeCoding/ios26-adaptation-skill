@@ -1,5 +1,5 @@
 //
-//  NotificationAdapter.swift
+//  UNNotificationOptions+Adapter.swift
 //  iOS 26 Adaptation Template
 //
 //  Helper for adapting notification options to iOS 26 deprecated API changes.
@@ -7,7 +7,7 @@
 
 import UserNotifications
 
-public enum NotificationAdapter {
+public enum UNNotificationOptionsAdapter {
     
     /// Presentation options for notification foreground display.
     /// Replaces deprecated `.alert` with `.banner` and `.list` on iOS 26+.
@@ -40,7 +40,7 @@ public enum NotificationAdapter {
          willPresent notification: UNNotification,
          withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
      ) {
-         completionHandler(NotificationAdapter.presentationOptions)
+         completionHandler(UNNotificationOptionsAdapter.presentationOptions)
      }
  }
  */
@@ -49,7 +49,7 @@ public enum NotificationAdapter {
 
 /*
  UNUserNotificationCenter.current().requestAuthorization(
-     options: NotificationAdapter.authorizationOptions
+     options: UNNotificationOptionsAdapter.authorizationOptions
  ) { granted, error in
      // Handle result
  }

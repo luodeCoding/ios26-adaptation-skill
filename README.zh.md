@@ -125,10 +125,10 @@ grep -r "UNAuthorizationOptionAlert" --include="*.swift" --include="*.m"
 
 | 模板 | Swift | Objective-C | 用途 |
 |------|-------|-------------|------|
-| `UIApplication+Extension` | [Swift](./templates/swift/UIApplication+Extension.swift) | [OC](./templates/objc/UIApplication+Extension.h) | 统一窗口/导航访问 |
+| `UIApplication+MainWindow` | [Swift](./templates/swift/UIApplication+MainWindow.swift) | [OC](./templates/objc/UIApplication+MainWindow.h) | 统一窗口/导航访问 |
 | `SceneDelegate` | [Swift](./templates/swift/SceneDelegate.swift) | [OC](./templates/objc/SceneDelegate.h) | 窗口创建与生命周期转发 |
 | `AppDelegate+Setup` | [Swift](./templates/swift/AppDelegate+Setup.swift) | [OC](./templates/objc/AppDelegate+Setup.h) | 双路径启动改造 |
-| `NotificationAdapter` | [Swift](./templates/swift/NotificationAdapter.swift) | [OC](./templates/objc/NotificationAdapter.h) | iOS 26 通知选项适配 |
+| `UNNotificationOptions+Adapter` | [Swift](./templates/swift/UNNotificationOptions+Adapter.swift) | [OC](./templates/objc/UNNotificationOptionsAdapter.h) | iOS 26 通知选项适配 |
 
 详细的集成说明请见 `Pods/iOS26Adaptation/iOS26Adaptation.bundle/templates/README.md`（或本仓库的 [`templates/README.md`](./templates/README.md)）。
 

@@ -1,5 +1,5 @@
 //
-//  NotificationAdapter.h
+//  UNNotificationOptionsAdapter.h
 //  iOS 26 Adaptation Template
 //
 //  Helper for adapting notification options to iOS 26 deprecated API changes.

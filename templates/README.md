@@ -7,15 +7,15 @@ This directory contains production-ready code templates for the most common iOS 
 ```
 templates/
 ├── swift/                    # Swift templates
-│   ├── UIApplication+Extension.swift   # Unified window/navigation access
-│   ├── SceneDelegate.swift             # Full SceneDelegate implementation
-│   ├── AppDelegate+Setup.swift         # AppDelegate refactoring example
-│   └── NotificationAdapter.swift       # Notification options adapter
+│   ├── UIApplication+MainWindow.swift       # Unified window/navigation access
+│   ├── SceneDelegate.swift                  # Full SceneDelegate implementation
+│   ├── AppDelegate+Setup.swift              # AppDelegate refactoring example
+│   └── UNNotificationOptions+Adapter.swift  # Notification options adapter
 └── objc/                     # Objective-C templates
-    ├── UIApplication+Extension.h/.m
+    ├── UIApplication+MainWindow.h/.m
     ├── SceneDelegate.h/.m
     ├── AppDelegate+Setup.h/.m
-    └── NotificationAdapter.h/.m
+    └── UNNotificationOptionsAdapter.h/.m
 ```
 
 ## How to Use

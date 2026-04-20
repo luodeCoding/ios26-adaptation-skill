@@ -1,5 +1,5 @@
 //
-//  UIApplication+Extension.swift
+//  UIApplication+MainWindow.swift
 //  iOS 26 Adaptation Template
 //
 //  Unified window and navigation access interface for SceneDelegate architecture.
@@ -13,17 +13,19 @@ public extension UIApplication {
     /// Returns the current key window, compatible with both iOS 12 and iOS 13+.
     var mainWindow: UIWindow? {
         if #available(iOS 13.0, *) {
-            return connectedScenes
+            let activeScene = connectedScenes
                 .compactMap { $0 as? UIWindowScene }
-                .first(where: { $0.activationState == .foregroundActive })?
-                .windows
-                .first(where: \.isKeyWindow)
-                ?? connectedScenes
+                .first(where: { $0.activationState == .foregroundActive })
+            if let scene = activeScene, let window = scene.windows.first(where: \.isKeyWindow) {
+                return window
+            }
+            let anyScene = connectedScenes
                 .compactMap { $0 as? UIWindowScene }
-                .first?
-                .windows
-                .first(where: \.isKeyWindow)
-                ?? windows.first(where: \.isKeyWindow)
+                .first
+            if let scene = anyScene, let window = scene.windows.first(where: \.isKeyWindow) {
+                return window
+            }
+            return windows.first(where: \.isKeyWindow)
         } else {
             return delegate?.window ?? nil
         }

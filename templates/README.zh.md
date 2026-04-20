@@ -7,15 +7,15 @@
 ```
 templates/
 ├── swift/                    # Swift 模板
-│   ├── UIApplication+Extension.swift   # 统一窗口/导航访问
-│   ├── SceneDelegate.swift             # 完整 SceneDelegate 实现
-│   ├── AppDelegate+Setup.swift         # AppDelegate 改造示例
-│   └── NotificationAdapter.swift       # 通知选项适配器
+│   ├── UIApplication+MainWindow.swift       # 统一窗口/导航访问
+│   ├── SceneDelegate.swift                  # 完整 SceneDelegate 实现
+│   ├── AppDelegate+Setup.swift              # AppDelegate 改造示例
+│   └── UNNotificationOptions+Adapter.swift  # 通知选项适配器
 └── objc/                     # Objective-C 模板
-    ├── UIApplication+Extension.h/.m
+    ├── UIApplication+MainWindow.h/.m
     ├── SceneDelegate.h/.m
     ├── AppDelegate+Setup.h/.m
-    └── NotificationAdapter.h/.m
+    └── UNNotificationOptionsAdapter.h/.m
 ```
 
 ## 使用方法

@@ -1,9 +1,9 @@
 //
-//  NotificationAdapter.m
+//  UNNotificationOptionsAdapter.m
 //  iOS 26 Adaptation Template
 //
 
-#import "NotificationAdapter.h"
+#import "UNNotificationOptionsAdapter.h"
 
 @implementation NotificationAdapter
 

@@ -1,9 +1,9 @@
 //
-//  UIApplication+Extension.m
+//  UIApplication+MainWindow.m
 //  iOS 26 Adaptation Template
 //
 
-#import "UIApplication+Extension.h"
+#import "UIApplication+MainWindow.h"
 
 @implementation UIApplication (Extension)
 
