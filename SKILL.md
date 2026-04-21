@@ -686,7 +686,7 @@ if (@available(iOS 26.0, *)) {
 ## Resources
 
 ### Internal Documents
-- [Code Templates](../templates/) — Production-ready Swift and Objective-C templates
+- [Code Templates](../templates/) — Production-ready Swift and Objective-C templates (copy to your project and modify)
 - [FAQ](../docs/faq.md) — Common questions about deadlines, build errors, and Liquid Glass
 - [Testing Guide](../docs/testing-guide.md) — Complete testing framework for QA teams
 - [Chinese Framework Guide](../.claude/iOS26-适配框架指南.md) — Full adaptation framework in Chinese

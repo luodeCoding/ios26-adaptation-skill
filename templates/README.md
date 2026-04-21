@@ -20,10 +20,38 @@ templates/
 
 ## How to Use
 
-1. **Copy** the relevant files into your Xcode project.
-2. **Rename** classes (e.g., `RootViewController`) to match your project.
-3. **Adapt** method signatures if your existing `AppDelegate` already has similar methods.
-4. **Verify** all lifecycle events are forwarded correctly in `SceneDelegate`.
+### Step 1: Copy files to your project
+
+Drag the files you need from `templates/swift/` (or `templates/objc/`) into your Xcode project:
+
+1. In Xcode, right-click your project folder → **Add Files to "YourProject"...**
+2. Select the template files you need
+3. Check **"Create groups"** and check your target
+4. Click **Add**
+
+### Step 2: Rename and adapt
+
+- Replace `RootViewController` with your actual root view controller class name
+- If your `AppDelegate` already has similar methods, merge rather than replace
+- Adjust method signatures if your existing code uses different naming conventions
+
+### Step 3: Verify lifecycle forwarding
+
+Make sure all lifecycle events in `SceneDelegate` are correctly forwarded to your `AppDelegate`:
+
+```swift
+// SceneDelegate.swift
+func sceneDidBecomeActive(_ scene: UIScene) {
+    AppDelegate.sharedInstance()?.applicationDidBecomeActive(UIApplication.shared)
+}
+
+func sceneWillEnterForeground(_ scene: UIScene) {
+    AppDelegate.sharedInstance()?.applicationWillEnterForeground(UIApplication.shared)
+}
+// ... etc
+```
+
+Missing any of these can break analytics, state saving, and push notification handling.
 
 ## Important Notes
 
@@ -31,3 +59,4 @@ templates/
 - `UIApplication+Extension` gracefully falls back to `delegate.window` on iOS 12.
 - `NotificationAdapter` centralizes version checks so you don't scatter `@available` checks everywhere.
 - The `AppDelegate+Setup` templates are designed as **extensions/commented examples** — integrate them into your existing AppDelegate rather than replacing it entirely.
+- After copying, these files become part of your project. Modify them freely to fit your needs.

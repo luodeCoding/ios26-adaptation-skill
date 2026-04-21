@@ -9,7 +9,7 @@
 > **语言**: Objective-C / Swift  
 > **平台**: iOS  
 > **最低 iOS 版本**: 12.0+  
-> **最后更新**: 2026-04-14
+> **最后更新**: 2026-04-21
 
 全面适配 iOS 26 SDK 和 Liquid Glass 设计语言的技能指南。
 
@@ -52,76 +52,82 @@ Apple 要求所有在 **2026年4月28日** 之后提交的应用必须使用 iOS
 
 ## 快速开始
 
-### 1. 通过 CocoaPods 安装
-
-在你的项目 `Podfile` 中添加：
-
-```ruby
-pod 'iOS26Adaptation', '~> 1.0'
-```
-
-然后运行：
+### 1. 下载本仓库到本地
 
 ```bash
-pod install
+# 方式1：git clone（推荐，方便后续更新）
+git clone https://github.com/luodeCoding/ios26-adaptation-skill.git
+
+# 方式2：直接下载 ZIP
+# 访问 https://github.com/luodeCoding/ios26-adaptation-skill/archive/refs/heads/main.zip
 ```
 
-> **为什么选择 CocoaPods？** 本包仅包含文档、代码模板和扫描脚本 —— **不会编译任何代码**到你的应用中。完成 iOS 26 适配并通过 bug 验证后，你可以安全地移除该 pod，对项目没有任何影响。
+### 2. 在主项目中引用本地文件夹
 
-安装后，所有资源位于：
+**Xcode 操作步骤：**
+
+1. 打开你的主项目 Xcode
+2. 右键点击项目导航栏中的项目根目录 → **Add Files to "YourProject"...**
+3. 在弹出的文件选择器中，找到你下载的 `ios26-adaptation-skill` 文件夹
+4. **关键**：勾选 **"Create folder references"**（不是 Create groups！）
+   
+   ![create-folder-reference](https://i.imgur.com/placeholder.png)
+   
+5. 确保勾选你的 app target
+6. 点击 **Add**
+
+> 💡 **为什么选择 "Create folder references"？**
+> - 文件夹以蓝色图标显示在 Xcode 中
+> - 文件夹内容与本地磁盘实时同步
+> - 在 Xcode 里修改文件 = 直接修改本地仓库文件
+> - 在 Finder 里修改文件 = Xcode 立刻看到变化
+
+**引用后的项目结构：**
 
 ```
-Pods/iOS26Adaptation/iOS26Adaptation.bundle/
-├── templates/       # Swift 和 Objective-C 代码模板
-├── scripts/         # ios26-scanner.py 扫描脚本
-├── docs/            # FAQ 和测试指南
-├── examples/        # 分阶段检查清单
-└── *.md             # 文档
+YourMainProject/
+├── ios26-adaptation-skill/     ← 蓝色文件夹（folder reference）
+│   ├── templates/
+│   │   ├── swift/
+│   │   └── objc/
+│   ├── scripts/
+│   ├── docs/
+│   └── ...
+├── YourApp/
+└── YourApp.xcodeproj
 ```
 
-### 2. 确定你的策略
+### 3. 将模板代码加入编译
 
-根据你的应用发布日期：
+folder reference 中的文件**不会自动编译**，需要把需要的模板文件单独加入 target：
 
-| 发布日期 | 推荐策略 |
-|---------|---------|
-| 2026-04-28 之前 | **策略 A**: 在新分支中适配，截止日期后合并 |
-| 2026-04-28 ~ Xcode 27 | **策略 B**: 完成第一阶段，评估第二阶段 |
-| Xcode 27 之后 | **策略 C**: 两个阶段的适配一起完成 |
+1. 从 `ios26-adaptation-skill/templates/swift/` 中，选择你需要的文件：
+   - `UIApplication+MainWindow.swift`
+   - `SceneDelegate.swift`
+   - `AppDelegate+Setup.swift`
+   - `UNNotificationOptions+Adapter.swift`
+   
+2. 右键 → **Add Files to "YourProject"...**
+3. 这次选择 **"Create groups"** + 勾选你的 target
+4. 这些文件会以黄色文件夹（group）形式加入，会被编译
 
-### 3. 扫描你的项目
+> ⚠️ **注意**：这样加入的模板文件是**复制**到主项目中的。如果你想直接引用 skill 仓库里的文件（不复制），可以：
+> - 方式 A：复制到主项目，改起来更方便（推荐）
+> - 方式 B：不加入 target，只是参考，手动在自己的项目里写
 
-使用内置扫描脚本自动生成报告：
+### 4. 扫描你的项目
 
 ```bash
-# 如果通过 CocoaPods 安装，从 bundle 中运行
-python3 Pods/iOS26Adaptation/iOS26Adaptation.bundle/scripts/ios26-scanner.py /path/to/your/ios/project
+# 直接运行本地脚本
+python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project
 
-# 或直接使用本仓库
-python3 scripts/ios26-scanner.py /path/to/your/ios/project
-
-# 生成 JSON 报告以供后续处理
-python3 Pods/iOS26Adaptation/iOS26Adaptation.bundle/scripts/ios26-scanner.py /path/to/your/ios/project --format json --output report.json
+# 生成 JSON 报告
+python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project --format json --output report.json
 ```
 
-扫描器会检查：
-- 废弃 API（`keyWindow`、`delegate.window`、通知选项等）
-- 是否缺少 `SceneDelegate` 或 `UIApplicationSceneManifest`
-- `AppDelegate` 是否缺少 `sharedInstance` 方法
+### 5. 应用代码模板
 
-或手动搜索常见的废弃 API 模式：
-
-```bash
-# 常用搜索模式
-grep -r "keyWindow" --include="*.swift" --include="*.m" --include="*.mm"
-grep -r "delegate\.window" --include="*.swift" --include="*.m" --include="*.mm"
-grep -r "UNNotificationPresentationOptionAlert" --include="*.swift" --include="*.m"
-grep -r "UNAuthorizationOptionAlert" --include="*.swift" --include="*.m"
-```
-
-### 4. 应用代码模板
-
-参考已安装 bundle 中的模板（或直接从本仓库 `templates/` 目录），复制到你的 Xcode 项目并根据需要调整类名：
+从 `templates/` 目录复制需要的文件到你的 Xcode 项目，并根据需要调整类名：
 
 | 模板 | Swift | Objective-C | 用途 |
 |------|-------|-------------|------|
@@ -130,9 +136,9 @@ grep -r "UNAuthorizationOptionAlert" --include="*.swift" --include="*.m"
 | `AppDelegate+Setup` | [Swift](./templates/swift/AppDelegate+Setup.swift) | [OC](./templates/objc/AppDelegate+Setup.h) | 双路径启动改造 |
 | `UNNotificationOptions+Adapter` | [Swift](./templates/swift/UNNotificationOptions+Adapter.swift) | [OC](./templates/objc/UNNotificationOptionsAdapter.h) | iOS 26 通知选项适配 |
 
-详细的集成说明请见 `Pods/iOS26Adaptation/iOS26Adaptation.bundle/templates/README.md`（或本仓库的 [`templates/README.md`](./templates/README.md)）。
+详细的集成说明请见 [`templates/README.md`](./templates/README.md)。
 
-### 5. 遵循检查清单
+### 6. 遵循检查清单
 
 详见 [SKILL.md](./SKILL.md) 获取：
 - 决策流程图
@@ -140,12 +146,34 @@ grep -r "UNAuthorizationOptionAlert" --include="*.swift" --include="*.m"
 - 分阶段检查清单
 - 测试框架
 
-### 6. 查看常见问题
+### 7. 查看常见问题
 
-遇到常见疑问？请参阅 [docs/faq.md](./docs/faq.md)，其中解答了：
-- 是否需要修改 Deployment Target？
-- CocoaPods 中包含废弃 API 怎么办？
-- 是否只需在模拟器上测试？
+遇到常见疑问？请参阅 [docs/faq.md](./docs/faq.md)。
+
+---
+
+## 工作流：遇到问题时的快速调整
+
+```
+主项目 Xcode 编译报错
+        ↓
+查看 ios26-adaptation-skill/ 中的模板/文档
+        ↓
+直接在 Xcode 里修改 skill 项目中的文件（蓝色文件夹）
+        ↓
+修改即时生效，无需复制/同步
+        ↓
+验证通过后，进入 skill 项目目录提交到 GitHub
+        ↓
+cd /path/to/ios26-adaptation-skill
+git add .
+git commit -m "fix: xxx"
+git push
+```
+
+> ✅ **核心优势**：所有文件都在本地，改完立刻编译验证，改 skill 项目的文件就是改本地仓库，随时可提交到 GitHub。
+
+---
 
 ## 项目结构
 
@@ -180,7 +208,7 @@ ios26-adaptation-skill/
 |-----|------|
 | 必须将 Deployment Target 改为 iOS 26 | ❌ 不需要。保持你当前的最低版本（iOS 12/13 等） |
 | 用户必须升级到 iOS 26 | ❌ 不需要。运行时要求由 Deployment Target 决定 |
-| 现有应用版本将被下架 | ❌ 不会。仅影响新提交和更新 |
+| 现有应用版本将被下架 | ❌ 不会。仅影响新提交和更新包 |
 | 有宽限期 | ❌ 没有。2026年4月28日是硬性截止日期 |
 
 ## 核心概念
