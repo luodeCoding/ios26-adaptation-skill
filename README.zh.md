@@ -1,4 +1,4 @@
-# iOS 26 适配指南
+# iOS 26 适配技能
 
 <div align="right">
   <b>🌐 语言:</b> <a href="./README.md">English</a> | 中文
@@ -11,16 +11,19 @@
 > **最低 iOS 版本**: 12.0+  
 > **最后更新**: 2026-04-21
 
-全面适配 iOS 26 SDK 和 Liquid Glass 设计语言的技能指南。
+**本仓库是 AI 适配技能工具，不参与任何项目编译。**
 
-## 概览
+提供 iOS 26 SDK 适配的方案、模板、扫描脚本和检查清单，供 AI 助手和开发者参考使用。
 
-Apple 要求所有在 **2026年4月28日** 之后提交的应用必须使用 iOS 26 SDK 构建。本指南提供：
+## 这是什么？
 
-- 📋 **两阶段适配策略** - SDK 构建适配 和 Liquid Glass 完整适配
-- 🔍 **项目扫描规则** - 识别废弃 API 和需要的改动
-- 📊 **决策流程图** - 根据你的时间安排选择合适的适配策略
-- ✅ **检查清单** - 跟踪每个阶段的进度
+本仓库是一个**独立的技能知识库**，用于：
+
+- 🤖 **AI 助手** — 读取 SKILL.md、模板代码、检查清单，指导开发者完成适配
+- 👨‍💻 **开发者参考** — 查看代码模板、复制需要的代码到主项目
+- 🔍 **项目扫描** — 运行脚本检查主项目的废弃 API
+
+**本仓库的文件不会被主项目引用或编译。** 所有模板代码需要开发者**手动复制**到主项目中使用。
 
 ## 关键时间节点
 
@@ -50,199 +53,110 @@ Apple 要求所有在 **2026年4月28日** 之后提交的应用必须使用 iOS
 - 验证所有 UI 控件在 Liquid Glass 下的表现
 - 调整自定义 UI 以达到视觉协调
 
-## 快速开始
+## 使用方式
 
-### 1. 下载本仓库到本地
+### 方式1：AI 助手使用（推荐）
+
+将本仓库作为 AI 技能加载，AI 读取文档和模板后，直接在主项目中生成/修改代码。
+
+```
+开发者: "帮我适配 iOS 26"
+AI: 读取 SKILL.md → 扫描主项目 → 生成适配代码 → 直接修改主项目文件
+```
+
+### 方式2：开发者手动参考
 
 ```bash
-# 方式1：git clone（推荐，方便后续更新）
+# 1. 下载到本地（任意位置，和主项目无关）
 git clone https://github.com/luodeCoding/ios26-adaptation-skill.git
 
-# 方式2：直接下载 ZIP
-# 访问 https://github.com/luodeCoding/ios26-adaptation-skill/archive/refs/heads/main.zip
+# 2. 查看需要的模板
+cat ios26-adaptation-skill/templates/swift/SceneDelegate.swift
+
+# 3. 手动复制需要的代码到主项目
+# 直接复制粘贴，按需修改
+
+# 4. 运行扫描脚本检查遗漏
+python3 ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project
 ```
-
-### 2. 在主项目中引用本地文件夹
-
-**Xcode 操作步骤：**
-
-1. 打开你的主项目 Xcode
-2. 右键点击项目导航栏中的项目根目录 → **Add Files to "YourProject"...**
-3. 在弹出的文件选择器中，找到你下载的 `ios26-adaptation-skill` 文件夹
-4. **关键**：勾选 **"Create folder references"**（不是 Create groups！）
-   
-   ![create-folder-reference](https://i.imgur.com/placeholder.png)
-   
-5. 确保勾选你的 app target
-6. 点击 **Add**
-
-> 💡 **为什么选择 "Create folder references"？**
-> - 文件夹以蓝色图标显示在 Xcode 中
-> - 文件夹内容与本地磁盘实时同步
-> - 在 Xcode 里修改文件 = 直接修改本地仓库文件
-> - 在 Finder 里修改文件 = Xcode 立刻看到变化
-
-**引用后的项目结构：**
-
-```
-YourMainProject/
-├── ios26-adaptation-skill/     ← 蓝色文件夹（folder reference）
-│   ├── templates/
-│   │   ├── swift/
-│   │   └── objc/
-│   ├── scripts/
-│   ├── docs/
-│   └── ...
-├── YourApp/
-└── YourApp.xcodeproj
-```
-
-### 3. 将模板代码加入编译
-
-folder reference 中的文件**不会自动编译**，需要把需要的模板文件单独加入 target：
-
-1. 从 `ios26-adaptation-skill/templates/swift/` 中，选择你需要的文件：
-   - `UIApplication+MainWindow.swift`
-   - `SceneDelegate.swift`
-   - `AppDelegate+Setup.swift`
-   - `UNNotificationOptions+Adapter.swift`
-   
-2. 右键 → **Add Files to "YourProject"...**
-3. 这次选择 **"Create groups"** + 勾选你的 target
-4. 这些文件会以黄色文件夹（group）形式加入，会被编译
-
-> ⚠️ **注意**：这样加入的模板文件是**复制**到主项目中的。如果你想直接引用 skill 仓库里的文件（不复制），可以：
-> - 方式 A：复制到主项目，改起来更方便（推荐）
-> - 方式 B：不加入 target，只是参考，手动在自己的项目里写
-
-### 4. 扫描你的项目
-
-```bash
-# 直接运行本地脚本
-python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project
-
-# 生成 JSON 报告
-python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project --format json --output report.json
-```
-
-### 5. 应用代码模板
-
-从 `templates/` 目录复制需要的文件到你的 Xcode 项目，并根据需要调整类名：
-
-| 模板 | Swift | Objective-C | 用途 |
-|------|-------|-------------|------|
-| `UIApplication+MainWindow` | [Swift](./templates/swift/UIApplication+MainWindow.swift) | [OC](./templates/objc/UIApplication+MainWindow.h) | 统一窗口/导航访问 |
-| `SceneDelegate` | [Swift](./templates/swift/SceneDelegate.swift) | [OC](./templates/objc/SceneDelegate.h) | 窗口创建与生命周期转发 |
-| `AppDelegate+Setup` | [Swift](./templates/swift/AppDelegate+Setup.swift) | [OC](./templates/objc/AppDelegate+Setup.h) | 双路径启动改造 |
-| `UNNotificationOptions+Adapter` | [Swift](./templates/swift/UNNotificationOptions+Adapter.swift) | [OC](./templates/objc/UNNotificationOptionsAdapter.h) | iOS 26 通知选项适配 |
-
-详细的集成说明请见 [`templates/README.md`](./templates/README.md)。
-
-### 6. 遵循检查清单
-
-详见 [SKILL.md](./SKILL.md) 获取：
-- 决策流程图
-- 实施指南
-- 分阶段检查清单
-- 测试框架
-
-### 7. 查看常见问题
-
-遇到常见疑问？请参阅 [docs/faq.md](./docs/faq.md)。
-
----
-
-## 工作流：遇到问题时的快速调整
-
-```
-主项目 Xcode 编译报错
-        ↓
-查看 ios26-adaptation-skill/ 中的模板/文档
-        ↓
-直接在 Xcode 里修改 skill 项目中的文件（蓝色文件夹）
-        ↓
-修改即时生效，无需复制/同步
-        ↓
-验证通过后，进入 skill 项目目录提交到 GitHub
-        ↓
-cd /path/to/ios26-adaptation-skill
-git add .
-git commit -m "fix: xxx"
-git push
-```
-
-> ✅ **核心优势**：所有文件都在本地，改完立刻编译验证，改 skill 项目的文件就是改本地仓库，随时可提交到 GitHub。
-
----
 
 ## 项目结构
 
 ```
 ios26-adaptation-skill/
-├── README.md              # 本文件 - 快速入门指南
-├── README.zh.md           # 中文版 README
-├── SKILL.md               # 详细技能文档
+├── README.md              # 本文件
+├── README.zh.md           # 中文版
+├── SKILL.md               # 📘 AI 核心技能文档（详细适配指南）
+├── AGENTS.md              # 🤖 Claude Code Agent 使用指南
 ├── CHANGELOG.md           # 版本历史
 ├── LICENSE                # MIT 许可证
-├── AGENTS.md              # Claude Code Agent 使用指南
-├── docs/
-│   ├── testing-guide.md   # 测试团队测试指南
-│   └── faq.md             # 常见问题解答
-├── .claude/
-│   └── iOS26-适配框架指南.md  # 完整适配框架指南（中文）
-├── examples/
-│   ├── phase1-checklist.md    # 第一阶段执行检查清单（英文）
-│   ├── phase1-checklist.zh.md # 第一阶段执行检查清单（中文）
-│   ├── phase2-checklist.md    # 第二阶段执行检查清单（英文）
-│   └── phase2-checklist.zh.md # 第二阶段执行检查清单（中文）
-├── scripts/
-│   └── ios26-scanner.py   # 自动化项目扫描脚本
-└── templates/
-    ├── swift/                 # Swift 代码模板
-    └── objc/                  # Objective-C 代码模板
+│
+├── docs/                  # 📚 文档
+│   ├── faq.md             # 常见问题
+│   └── testing-guide.md   # 测试指南
+│
+├── .claude/               # 🎯 Claude 专用指南
+│   └── iOS26-适配框架指南.md
+│
+├── examples/              # ✅ 检查清单
+│   ├── phase1-checklist.md
+│   ├── phase1-checklist.zh.md
+│   ├── phase2-checklist.md
+│   └── phase2-checklist.zh.md
+│
+├── scripts/               # 🔍 扫描脚本
+│   └── ios26-scanner.py   # 废弃 API 扫描器
+│
+└── templates/             # 📋 代码模板（仅参考，不编译）
+    ├── swift/             # Swift 模板
+    │   ├── UIApplication+MainWindow.swift
+    │   ├── SceneDelegate.swift
+    │   ├── AppDelegate+Setup.swift
+    │   └── UNNotificationOptions+Adapter.swift
+    └── objc/              # Objective-C 模板
+        ├── UIApplication+MainWindow.h/.m
+        ├── SceneDelegate.h/.m
+        ├── AppDelegate+Setup.h/.m
+        └── UNNotificationOptionsAdapter.h/.m
 ```
+
+## 核心内容速览
+
+### 废弃 API 替换
+
+| 废弃 API | 替代方案 | 模板位置 |
+|---------|---------|---------|
+| `keyWindow` | `UIApplication.mainWindow` | `templates/swift/UIApplication+MainWindow.swift` |
+| `delegate.window` | `UIApplication.mainWindow` | 同上 |
+| `UNNotificationPresentationOptionAlert` | `.banner \| .list` | `templates/swift/UNNotificationOptions+Adapter.swift` |
+| `UNAuthorizationOptionAlert` | `.banner` | 同上 |
+
+### 扫描脚本
+
+```bash
+# 扫描主项目的废弃 API
+python3 scripts/ios26-scanner.py /path/to/your/ios/project
+
+# 输出 JSON 报告
+python3 scripts/ios26-scanner.py /path/to/your/ios/project --format json --output report.json
+```
+
+### AI 技能文档
+
+| 文档 | 用途 |
+|------|------|
+| `SKILL.md` | 完整适配指南、决策流程、代码示例 |
+| `AGENTS.md` | Claude Code 工作流、触发条件、检查清单 |
+| `.claude/iOS26-适配框架指南.md` | 中文完整框架指南 |
 
 ## 常见误区
 
 | 误区 | 事实 |
 |-----|------|
-| 必须将 Deployment Target 改为 iOS 26 | ❌ 不需要。保持你当前的最低版本（iOS 12/13 等） |
+| 必须将 Deployment Target 改为 iOS 26 | ❌ 不需要。保持你当前的最低版本 |
 | 用户必须升级到 iOS 26 | ❌ 不需要。运行时要求由 Deployment Target 决定 |
 | 现有应用版本将被下架 | ❌ 不会。仅影响新提交和更新包 |
 | 有宽限期 | ❌ 没有。2026年4月28日是硬性截止日期 |
-
-## 核心概念
-
-### SceneDelegate 架构（iOS 13+）
-
-- **问题**: `UIApplication.keyWindow` 和 `AppDelegate.window` 在 iOS 13+ 中不可靠
-- **解决方案**: 通过 `UIApplication` 扩展使用统一访问接口
-- **影响**: 所有窗口访问必须通过新接口进行
-
-### 废弃 API（iOS 26）
-
-| 废弃 API | 替代方案 |
-|---------|---------|
-| `keyWindow` | 基于 SceneDelegate 的窗口访问 |
-| `UNNotificationPresentationOptionAlert` | `UNNotificationPresentationOptionBanner \| List` |
-| `UNAuthorizationOptionAlert` | `UNAuthorizationOptionBanner` |
-
-### Liquid Glass 设计
-
-- **是什么**: iOS 26 的新视觉语言
-- **自动适配**: 标准 UIKit 控件自动获得新外观
-- **自定义**: 自定义 UI 需要手动调整
-- **时间线**: 第一阶段可选，第二阶段强制
-
-## 决策检查清单
-
-开始适配前，请回答以下问题：
-
-- [ ] 下次应用发布计划是什么时候？
-- [ ] 现在是否有可用的开发资源？
-- [ ] SceneDelegate 是否已经配置？
-- [ ] 项目中有多少废弃 API 调用？
-- [ ] 是否使用了大量自定义 UI 组件？
 
 ## 资源
 

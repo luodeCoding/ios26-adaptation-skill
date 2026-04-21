@@ -1,6 +1,9 @@
 # iOS 26 Adaptation Code Templates
 
-This directory contains production-ready code templates for the most common iOS 26 adaptation tasks.
+This directory contains code templates for the most common iOS 26 adaptation tasks.
+
+> ⚠️ **These are reference templates only.** They are not compiled into any project.  
+> Copy the code you need into your main project and modify as needed.
 
 ## Structure
 
@@ -8,7 +11,7 @@ This directory contains production-ready code templates for the most common iOS 
 templates/
 ├── swift/                    # Swift templates
 │   ├── UIApplication+MainWindow.swift       # Unified window/navigation access
-│   ├── SceneDelegate.swift                  # Full SceneDelegate implementation
+│   ├── SceneDelegate.swift                  # SceneDelegate implementation
 │   ├── AppDelegate+Setup.swift              # AppDelegate refactoring example
 │   └── UNNotificationOptions+Adapter.swift  # Notification options adapter
 └── objc/                     # Objective-C templates
@@ -20,43 +23,22 @@ templates/
 
 ## How to Use
 
-### Step 1: Copy files to your project
+### For AI Assistants
 
-Drag the files you need from `templates/swift/` (or `templates/objc/`) into your Xcode project:
+Read these templates as reference when generating code for the main project. Use the patterns and structure, but generate code that fits the specific main project.
 
-1. In Xcode, right-click your project folder → **Add Files to "YourProject"...**
-2. Select the template files you need
-3. Check **"Create groups"** and check your target
-4. Click **Add**
+### For Developers
 
-### Step 2: Rename and adapt
+1. **Open** the template file you need
+2. **Copy** the code
+3. **Paste** into your main project's appropriate location
+4. **Modify** class names (e.g., `RootViewController` → your actual root VC)
+5. **Adapt** method signatures if your existing code uses different conventions
 
-- Replace `RootViewController` with your actual root view controller class name
-- If your `AppDelegate` already has similar methods, merge rather than replace
-- Adjust method signatures if your existing code uses different naming conventions
+### Important Notes
 
-### Step 3: Verify lifecycle forwarding
-
-Make sure all lifecycle events in `SceneDelegate` are correctly forwarded to your `AppDelegate`:
-
-```swift
-// SceneDelegate.swift
-func sceneDidBecomeActive(_ scene: UIScene) {
-    AppDelegate.sharedInstance()?.applicationDidBecomeActive(UIApplication.shared)
-}
-
-func sceneWillEnterForeground(_ scene: UIScene) {
-    AppDelegate.sharedInstance()?.applicationWillEnterForeground(UIApplication.shared)
-}
-// ... etc
-```
-
-Missing any of these can break analytics, state saving, and push notification handling.
-
-## Important Notes
-
-- These templates assume **iOS 12+** support.
-- `UIApplication+Extension` gracefully falls back to `delegate.window` on iOS 12.
-- `NotificationAdapter` centralizes version checks so you don't scatter `@available` checks everywhere.
-- The `AppDelegate+Setup` templates are designed as **extensions/commented examples** — integrate them into your existing AppDelegate rather than replacing it entirely.
-- After copying, these files become part of your project. Modify them freely to fit your needs.
+- These templates assume **iOS 12+** support
+- `UIApplication+Extension` gracefully falls back to `delegate.window` on iOS 12
+- `NotificationAdapter` centralizes version checks so you don't scatter `@available` checks everywhere
+- The `AppDelegate+Setup` templates are designed as **extensions/commented examples** — integrate them into your existing AppDelegate rather than replacing it entirely
+- **Do not** add these files to your Xcode project directly — copy the code content only

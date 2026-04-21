@@ -1,164 +1,137 @@
-# iOS 26 Adaptation — 快速集成指南
+# iOS 26 Adaptation — 使用说明
 
-> 本文档说明如何将本仓库作为本地文件夹引用到主项目中。
-
----
-
-## 核心思路
-
-本仓库**不作为 CocoaPods / SPM 包使用**，而是作为**本地文件夹**直接引用到主项目 Xcode 中。
-
-**好处：**
-- 所有文件都在本地磁盘，改完立刻编译验证
-- 在 Xcode 里修改 skill 项目文件 = 直接修改本地 git 仓库
-- 随时可进入 skill 项目目录提交到 GitHub
-- 无需复制文件、无需等待同步
+> 本仓库是**纯 AI 技能工具**，不参与任何项目编译。
 
 ---
 
-## 步骤
+## 核心定位
 
-### 1. 下载本仓库到本地
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    主项目（你的 iOS App）                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ AppDelegate │  │ SceneDelegate│  │ UIApplication+Ext   │  │
+│  │ （手动修改） │  │ （手动添加） │  │ （手动添加）        │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│                                                             │
+│  所有代码都是开发者手动复制/编写，和 skill 仓库无引用关系       │
+└─────────────────────────────────────────────────────────────┘
+                              ↑
+                              │ AI 读取 skill 知识，指导开发
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│           ios26-adaptation-skill（本仓库）                    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
+│  │ SKILL.md │  │ templates│  │ scripts  │  │ docs     │    │
+│  │ 知识文档  │  │ 代码模板  │  │ 扫描脚本  │  │ 参考文档  │    │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │
+│                                                             │
+│  仅作为 AI 知识和开发者参考，不加入任何 Xcode 项目编译          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 使用方式
+
+### 方式1：AI 助手驱动（推荐）
+
+AI 读取本仓库的知识，直接在主项目中生成和修改代码。
+
+**开发者只需要说：**
+
+```
+"帮我适配 iOS 26"
+"扫描一下项目有哪些废弃 API"
+"生成 SceneDelegate 代码"
+```
+
+**AI 的工作流程：**
+
+1. 读取 `SKILL.md` 了解适配策略
+2. 读取 `AGENTS.md` 了解检查清单
+3. 运行 `scripts/ios26-scanner.py` 扫描主项目
+4. 参考 `templates/` 中的代码模板
+5. **直接在主项目中**生成/修改代码
+
+### 方式2：开发者手动参考
 
 ```bash
-# 推荐：git clone（方便后续更新和提交）
+# 1. 下载到本地任意位置（和主项目完全独立）
 git clone https://github.com/luodeCoding/ios26-adaptation-skill.git
 
-# 或者下载 ZIP 解压
-```
+# 2. 查看需要的模板代码
+cat ios26-adaptation-skill/templates/swift/SceneDelegate.swift
 
-记住这个路径，比如 `~/Projects/ios26-adaptation-skill/`。
+# 3. 手动复制粘贴到主项目，按需修改
+# 直接复制代码，不是引用文件！
 
-### 2. 在 Xcode 中引用为 Folder Reference
-
-1. 打开你的**主项目** Xcode
-2. 右键点击项目导航栏中的项目根目录 → **Add Files to "YourProject"...**
-3. 找到你下载的 `ios26-adaptation-skill` 文件夹
-4. ⚠️ **关键**：选择 **"Create folder references"**（蓝色文件夹图标）
-   
-   <img src="https://i.imgur.com/placeholder.png" width="400">
-   
-5. 勾选你的 app target
-6. 点击 **Add**
-
-完成后，你会在 Xcode 中看到一个**蓝色文件夹** `ios26-adaptation-skill/`，里面包含所有模板、脚本和文档。
-
-### 3. 将需要的模板加入编译目标
-
-Folder Reference 中的文件**不会自动编译**。把需要的模板文件加入你的 target：
-
-**Swift 项目：**
-
-从 `ios26-adaptation-skill/templates/swift/` 中选择：
-- `UIApplication+MainWindow.swift` — 统一窗口访问
-- `SceneDelegate.swift` — SceneDelegate 实现
-- `AppDelegate+Setup.swift` — AppDelegate 改造参考
-- `UNNotificationOptions+Adapter.swift` — 通知选项适配
-
-右键 → **Add Files to "YourProject"...** → 选择 **"Create groups"** + 勾选 target。
-
-这些文件会以**黄色文件夹**（group）形式加入，会被编译进你的 app。
-
-> 💡 **小技巧**：你也可以不加入 target，只是参考模板代码，然后在自己的项目文件里手写。这样更灵活。
-
-### 4. 修改模板适配你的项目
-
-| 需要修改的地方 | 说明 |
-|---------------|------|
-| `RootViewController` | 替换为你项目的根视图控制器 |
-| `AppDelegate.sharedInstance()` | 如果已有类似方法，合并即可 |
-| `setupSceneUI(window:)` | 根据你的 UI 结构调整 |
-
-### 5. 修改 Info.plist
-
-添加 SceneDelegate 配置和 Liquid Glass 临时禁用：
-
-```xml
-<!-- 临时禁用 Liquid Glass -->
-<key>UIDesignRequiresCompatibility</key>
-<true/>
-
-<!-- SceneDelegate 配置 -->
-<key>UIApplicationSceneManifest</key>
-<dict>
-    <key>UIApplicationSupportsMultipleScenes</key>
-    <false/>
-    <key>UISceneConfigurations</key>
-    <dict>
-        <key>UIWindowSceneSessionRoleApplication</key>
-        <array>
-            <dict>
-                <key>UISceneConfigurationName</key>
-                <string>Default Configuration</string>
-                <key>UISceneDelegateClassName</key>
-                <string>SceneDelegate</string>
-            </dict>
-        </array>
-    </dict>
-</dict>
-```
-
-### 6. 运行扫描脚本
-
-```bash
-python3 ~/Projects/ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project
+# 4. 运行扫描脚本检查遗漏
+python3 ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project
 ```
 
 ---
 
-## 工作流：遇到问题时的快速调整
+## 重要说明
+
+### ❌ 不要做的事情
+
+| 不要做 | 原因 |
+|--------|------|
+| 不要把 skill 仓库文件加入 Xcode 项目 | 这些文件只是参考模板，不需要编译 |
+| 不要用 `#import` 或 `import` 引用 skill 文件 | skill 文件不在主项目中 |
+| 不要把 skill 仓库作为 git submodule | 完全没必要，AI 直接读取本地文件即可 |
+| 不要把 skill 仓库复制到主项目里 | 保持独立，方便更新和 AI 读取 |
+
+### ✅ 正确的工作流
 
 ```
-主项目编译报错
-    ↓
-查看 ios26-adaptation-skill/ 中的模板或文档
-    ↓
-直接在 Xcode 里修改 skill 项目中的文件（蓝色文件夹）
-    ↓
-⌘+B 编译验证，修改即时生效
-    ↓
-验证通过后，提交 skill 项目到 GitHub
-    ↓
-cd ~/Projects/ios26-adaptation-skill
-git add .
-git commit -m "fix: xxx"
-git push
+主项目遇到 iOS 26 适配问题
+        ↓
+AI 读取 skill 仓库知识（SKILL.md、模板、检查清单）
+        ↓
+AI 分析主项目代码，找出问题
+        ↓
+AI 参考模板，直接在主项目中生成修复代码
+        ↓
+开发者审阅、调整、编译验证
+        ↓
+发现问题 → 继续让 AI 调整（循环）
 ```
 
 ---
 
-## 常见问题
+## 文件用途说明
 
-**Q: Folder Reference 和 Group 有什么区别？**
+| 文件/目录 | 用途 | 谁使用 |
+|----------|------|--------|
+| `SKILL.md` | 完整适配指南、决策流程、代码示例 | AI + 开发者 |
+| `AGENTS.md` | Claude Code 工作流、触发条件 | AI |
+| `templates/swift/` | Swift 代码模板 | AI 参考后生成代码 |
+| `templates/objc/` | Objective-C 代码模板 | AI 参考后生成代码 |
+| `scripts/ios26-scanner.py` | 废弃 API 扫描脚本 | AI / 开发者手动运行 |
+| `docs/faq.md` | 常见问题解答 | 开发者参考 |
+| `examples/` | 分阶段检查清单 | AI + 开发者 |
 
-| | Folder Reference（蓝色） | Group（黄色） |
-|--|------------------------|--------------|
-| 与磁盘关系 | 实时同步文件夹内容 | 独立管理，可重命名/移动 |
-| 文件编译 | ❌ 不编译 | ✅ 编译 |
-| 用途 | 引用外部资源、文档 | 项目源代码 |
+---
 
-**Q: 为什么模板文件要再用 Group 加入一次？**
-
-因为 Folder Reference 只是引用，不编译。需要编译的代码文件必须用 Group 方式加入 target。
-
-**Q: 我在 Xcode 里改了蓝色文件夹里的文件，会同步到 GitHub 吗？**
-
-会。因为蓝色文件夹直接指向本地 git 仓库的文件夹。改完后进入该目录提交即可：
+## 扫描脚本使用
 
 ```bash
-cd ~/Projects/ios26-adaptation-skill
-git status  # 能看到你的修改
-git add .
-git commit -m "fix: xxx"
-git push
+# 基本用法
+python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project
+
+# 生成 JSON 报告
+python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py \
+    /path/to/your/ios/project \
+    --format json \
+    --output report.json
 ```
 
-**Q: 团队协作时别人也需要这样设置吗？**
-
-是的。每个开发者都需要：
-1. `git clone` 本仓库到本地
-2. 在 Xcode 中用同样方式引用（路径可以不同，Xcode 会记录相对路径）
-
-**Q: 适配完成后怎么移除？**
-
-直接删除 Xcode 中的蓝色文件夹引用即可。不会留下任何残留。
+扫描内容：
+- `keyWindow` 使用
+- `delegate.window` 使用
+- `UNNotificationPresentationOptionAlert`
+- `UNAuthorizationOptionAlert`
+- SceneDelegate 配置状态
+- AppDelegate `sharedInstance` 方法
