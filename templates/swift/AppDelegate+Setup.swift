@@ -60,6 +60,8 @@ extension AppDelegate {
          // iOS 13+ uses SceneDelegate for UI setup
      } else {
          // iOS 12: create window directly
+         // Note: UIScreen.main is deprecated in iOS 26 SDK but still required for iOS 12 path.
+         // For iOS 13+, window is created from UIWindowScene in SceneDelegate.
          let window = UIWindow(frame: UIScreen.main.bounds)
          setupSceneUI(window: window)
      }

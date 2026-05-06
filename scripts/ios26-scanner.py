@@ -103,6 +103,54 @@ RULES = [
     # NOTIF-002 removed: UNAuthorizationOptionAlert is NOT deprecated in iOS 26 SDK.
     # Do NOT flag it — it remains valid and should not be replaced.
     {
+        "id": "SCREEN-001",
+        "name": "Deprecated UIScreen.main usage (Swift)",
+        "pattern": re.compile(r"UIScreen\.main"),
+        "extensions": {".swift"},
+        "severity": "warning",
+        "suggestion": "Use UIWindowScene screen bounds for iOS 13+; annotate iOS 12 fallback with comment",
+    },
+    {
+        "id": "SCREEN-002",
+        "name": "Deprecated UIScreen mainScreen usage (Objective-C)",
+        "pattern": re.compile(r"\[UIScreen\s+mainScreen\]"),
+        "extensions": {".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "Use UIWindowScene screen bounds for iOS 13+; annotate iOS 12 fallback with comment",
+    },
+    {
+        "id": "WEB-001",
+        "name": "Removed UIWebView usage",
+        "pattern": re.compile(r"UIWebView"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "error",
+        "suggestion": "Replace with WKWebView (available since iOS 8)",
+    },
+    {
+        "id": "TLS-001",
+        "name": "Legacy TLS version (1.0/1.1)",
+        "pattern": re.compile(r"TLSv10|TLSv11|tlsMinimumSupportedProtocolVersion\s*=\s*\.TLSv1[01]|kCFStreamSSLLevel"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "Upgrade server to TLS 1.2+; remove legacy TLS workaround code",
+    },
+    {
+        "id": "COREDATA-001",
+        "name": "Removed CoreData iCloud ubiquitous sync keys",
+        "pattern": re.compile(r"NSPersistentStoreUbiquitousContentNameKey|NSPersistentStoreUbiquitousContentURLKey|NSPersistentStoreUbiquitousPeerTokenOption|NSPersistentStoreRemoveUbiquitousMetadataOption|NSPersistentStoreUbiquitousContainerIdentifierKey|NSPersistentStoreRebuildFromUbiquitousContentOption"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "error",
+        "suggestion": "Migrate to NSPersistentCloudKitContainer (iOS 13+) or SwiftData (iOS 17+)",
+    },
+    {
+        "id": "SWIFT6-001",
+        "name": "Swift 6 strict concurrency — potential Sendable issue",
+        "pattern": re.compile(r"@StateObject|@ObservedObject|completionHandler.*@escaping"),
+        "extensions": {".swift"},
+        "severity": "info",
+        "suggestion": "Review for Swift 6 strict concurrency: add @MainActor, conform to Sendable, or use async/await",
+    },
+    {
         "id": "STATUS-001",
         "name": "Global statusBarStyle assignment",
         "pattern": re.compile(r"statusBarStyle\s*=\s*UIStatusBarStyle"),
@@ -167,6 +215,13 @@ def _should_skip_issue(rule_id: str, line: str, filepath: Path) -> bool:
     # UIApplication+Extension files legitimately access delegate.window as iOS 12 fallback
     if rule_id == "WINDOW-003" and "UIApplication+Extension" in str(filepath):
         if "self.delegate.window" in line or ("delegate.window" in line and "return" in line):
+            return True
+    # UIScreen.main in iOS 12 fallback path is legitimate but should be annotated
+    if rule_id in ("SCREEN-001", "SCREEN-002") and ("iOS 12" in line or "fallback" in line.lower() or "deprecated" in line.lower()):
+        return True
+    # AppDelegate templates legitimately use UIScreen.main for iOS 12 path
+    if rule_id in ("SCREEN-001", "SCREEN-002") and "AppDelegate" in str(filepath):
+        if "iOS 12" in line or "fallback" in line.lower():
             return True
     return False
 

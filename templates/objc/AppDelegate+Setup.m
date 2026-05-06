@@ -54,6 +54,8 @@
          // iOS 13+ uses SceneDelegate for UI setup
      } else {
          // iOS 12: create window directly
+         // Note: [UIScreen mainScreen] is deprecated in iOS 26 SDK but still required for iOS 12 path.
+         // For iOS 13+, window is created from UIWindowScene in SceneDelegate.
          UIWindow *window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
          [self setupSceneUI:window];
      }

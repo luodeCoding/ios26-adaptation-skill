@@ -112,6 +112,7 @@ Build with iOS 26 SDK, maintain existing UI appearance
 | `delegate.window` | Unified window access interface | Error |
 | `UNNotificationPresentationOptionAlert` | `Banner \| List` (iOS 14.0+) | Warning |
 | `UNAuthorizationOptionAlert` | Still valid — do NOT replace | — |
+| `UIScreen.main` | `UIWindowScene.screen` (iOS 13+) | Warning |
 
 #### 3. SceneDelegate Architecture
 
@@ -243,6 +244,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if #available(iOS 13.0, *) {
             // iOS 13+ uses SceneDelegate for UI setup
         } else {
+            // Note: UIScreen.main is deprecated in iOS 26 SDK but still required for iOS 12 path.
             let window = UIWindow(frame: UIScreen.main.bounds)
             setupSceneUI(window: window)
         }
@@ -791,6 +793,37 @@ Common problems after removing `UIDesignRequiresCompatibility`:
 | NOTIF-001 | `UNNotificationPresentationOptionAlert` | Warning |
 | NOTIF-002 | `UNAuthorizationOptionAlert` | Removed — not deprecated |
 
+### Screen Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| SCREEN-001 | `UIScreen.main` (Swift) | Warning |
+| SCREEN-002 | `[UIScreen mainScreen]` (Objective-C) | Warning |
+
+### WebView Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| WEB-001 | `UIWebView` | Error |
+
+### TLS / Network Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| TLS-001 | `TLSv10`, `TLSv11`, legacy `kCFStreamSSLLevel` | Warning |
+
+### CoreData Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| COREDATA-001 | `NSPersistentStoreUbiquitousContentNameKey` and related keys | Error |
+
+### Swift 6 Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| SWIFT6-001 | `@StateObject`, `@ObservedObject`, `@escaping` completion handlers | Info |
+
 ### Status Bar Patterns
 
 | Rule ID | Pattern | Severity |
@@ -948,6 +981,63 @@ UNAuthorizationOptions options = UNAuthorizationOptionAlert |
 - Phase separation strategy
 - Testing device allocation
 - Rollback plan if issues arise
+
+---
+
+## Additional iOS 26 SDK Changes
+
+### Swift 6 Strict Concurrency
+
+Xcode 26 ships with Swift 6 and enables **complete strict concurrency checking** by default.
+
+| Change | Before | After |
+|--------|--------|-------|
+| Main-thread UI updates | Implicit | Require `@MainActor` |
+| Mutable shared state | Allowed | Require `Sendable` conformance or isolation |
+| `@escaping` closures | Silent | Compiler warns about data races |
+| `completionHandler` patterns | Common | Migrate to `async/await` where possible |
+
+**Quick fixes**:
+- Add `@MainActor` to ViewModels and UI-related classes
+- Mark reference types that cross isolation boundaries with `@unchecked Sendable` (with care)
+- Replace `DispatchQueue.main.async` with `@MainActor` methods
+- Use `async/await` instead of completion-handler patterns for new code
+
+> ⚠️ **Build impact**: Projects with many `@escaping` closures and shared mutable state may see hundreds of new warnings. Plan time for this.
+
+### TLS Minimum Version Raised to 1.2
+
+For apps linked against the iOS 26 SDK, the **minimum TLS version** for `URLSession` and Network framework has been raised from 1.0 to 1.2.
+
+- Internal APIs or third-party services using TLS 1.0/1.1 will fail to connect
+- Check `Info.plist` for `NSExceptionMinimumTLSVersion` overrides and remove them
+- Verify corporate VPN and MDM connections support TLS 1.2+
+
+### CoreData iCloud Ubiquitous Sync Keys Removed
+
+The following deprecated `NSPersistentStore` option keys have been **removed** in iOS 26:
+
+- `NSPersistentStoreUbiquitousContentNameKey`
+- `NSPersistentStoreUbiquitousContentURLKey`
+- `NSPersistentStoreUbiquitousPeerTokenOption`
+- `NSPersistentStoreRemoveUbiquitousMetadataOption`
+- `NSPersistentStoreUbiquitousContainerIdentifierKey`
+- `NSPersistentStoreRebuildFromUbiquitousContentOption`
+
+**Migration**: Use `NSPersistentCloudKitContainer` (iOS 13+) or `SwiftData` (iOS 17+).
+
+### Liquid Glass Detailed Impact
+
+Beyond visual changes, Liquid Glass introduces structural layout differences:
+
+1. **Floating TabBar changes `safeAreaInsets`** at the bottom. Hardcoded bottom padding (e.g., `bottom: 80`) or manually calculated `safeAreaInsets` may misalign FABs, bottom sheets, and custom bottom bars.
+   - **Fix**: Use `UIViewController.additionalSafeAreaInsets` and respond to `viewSafeAreaInsetsDidChange()` instead of fixed values.
+
+2. **`UIDropShadowView` auto-inserted** by the system behind navigation bars and toolbars. This can break existing hit-testing or view-traversal logic that assumes direct subviews.
+   - **Fix**: Avoid relying on exact subview indexes or `subviews.first` for system bars.
+
+3. **Custom solid background colors clash** with glass refraction layers. Glass effects expect alpha/translucency; solid colors create visual seams.
+   - **Fix**: Remove custom `backgroundColor` on `UINavigationBar`, `UITabBar`, `UIToolbar`. Let the system apply glass materials, or use `UIBlurEffect` / `UIVisualEffectView`.
 
 ---
 

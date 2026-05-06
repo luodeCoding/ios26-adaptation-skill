@@ -4,14 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.2.0] - 2026-05-06
+## [1.3.0] - 2026-05-06
 
 ### Added
-- `templates/mixed/README.md` — bridging patterns for Swift/Objective-C mixed projects
-- Complete Objective-C implementation examples in `SKILL.md` (UIApplication+MainWindow, AppDelegate+Setup, SceneDelegate)
-- Language-specific sections in `SKILL.md` (Swift / Objective-C / Mixed)
+- **QA gap analysis**: Scanned against latest iOS 26 SDK docs and community migration guides
+- New scanner rules in `scripts/ios26-scanner.py`:
+  - `SCREEN-001/002` — `UIScreen.main` deprecation detection
+  - `WEB-001` — removed `UIWebView` detection
+  - `TLS-001` — legacy TLS 1.0/1.1 detection
+  - `COREDATA-001` — removed CoreData iCloud ubiquitous sync keys detection
+  - `SWIFT6-001` — Swift 6 strict concurrency info flag
+- New FAQ entries in `docs/faq.md`: Swift 6 concurrency, TLS 1.2, CoreData keys, TabBar safeArea, UIDropShadowView, background color conflicts
+- New section in `SKILL.md`: "Additional iOS 26 SDK Changes" covering Swift 6, TLS, CoreData, Liquid Glass structural impacts
+- Updated `docs/testing-guide.md` with TabBar safeArea, UIDropShadowView, and background conflict test cases
 
 ### Fixed
+- **Self-referencing deprecated API**: `SKILL.md` and `templates/swift/AppDelegate+Setup.swift` examples now annotate `UIScreen.main` usage in iOS 12 fallback path
 - **Critical correction**: `UNNotificationPresentationOptionAlert` was deprecated in **iOS 14.0**, not iOS 26.0 — updated all templates and docs
 - **Critical correction**: `UNAuthorizationOptionAlert` is **NOT deprecated** in iOS 26 SDK — removed replacement logic from all templates
 - Removed `NOTIF-002` scanner rule that incorrectly flagged `UNAuthorizationOptionAlert` as deprecated

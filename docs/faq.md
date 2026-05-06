@@ -138,6 +138,114 @@ See `templates/swift/UNNotificationOptions+Adapter.swift` or `templates/objc/UNN
 
 ---
 
+## Build & SDK
+
+### Q19: Build warning: `UIScreen.main` is deprecated
+
+`UIScreen.main` has been promoted from `API_TO_BE_DEPRECATED` to **deprecated** in the iOS 26 SDK.
+
+- **For iOS 13+**: Get screen bounds from `UIWindowScene`:
+  ```swift
+  if let scene = UIApplication.shared.connectedScenes
+      .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+      let bounds = scene.screen.bounds
+  }
+  ```
+- **For iOS 12 fallback path**: You may still use `UIScreen.main.bounds` inside the `else` branch of `#available(iOS 13.0, *)`. The compiler warning is acceptable here because there is no alternative on iOS 12.
+
+> ⚠️ If your deployment target is iOS 13+, remove all `UIScreen.main` usage entirely.
+
+### Q20: Hundreds of new concurrency warnings after building with Xcode 26
+
+Xcode 26 ships with **Swift 6** and enables strict concurrency checking by default.
+
+Common fixes:
+1. **Add `@MainActor`** to ViewModels and any class that updates UI:
+   ```swift
+   @MainActor
+   class MyViewModel: ObservableObject { }
+   ```
+2. **Mark mutable reference types** that cross isolation boundaries:
+   ```swift
+   final class MyManager: @unchecked Sendable { }
+   ```
+   > Use `@unchecked Sendable` only when you have verified thread safety manually.
+3. **Replace `DispatchQueue.main.async`** with `@MainActor` methods or `MainActor.run`:
+   ```swift
+   await MainActor.run {
+       self.updateUI()
+   }
+   ```
+4. **Migrate completion handlers to `async/await`** for new or heavily used APIs.
+
+Plan time for this — projects with many `@escaping` closures may see hundreds of warnings.
+
+### Q21: Network requests fail after building with iOS 26 SDK
+
+iOS 26 SDK raises the **minimum TLS version** for `URLSession` and Network framework from 1.0 to **1.2**.
+
+- Check `Info.plist` for `NSExceptionMinimumTLSVersion` or `NSAllowsArbitraryLoads` and remove them if possible
+- Verify all backend APIs and third-party services support TLS 1.2+
+- Corporate VPN / intranet connections using legacy TLS may break — coordinate with IT to upgrade
+
+### Q22: CoreData build error: `NSPersistentStoreUbiquitousContentNameKey` not found
+
+These deprecated CoreData iCloud sync keys have been **removed** in iOS 26:
+
+- `NSPersistentStoreUbiquitousContentNameKey`
+- `NSPersistentStoreUbiquitousContentURLKey`
+- `NSPersistentStoreUbiquitousPeerTokenOption`
+- `NSPersistentStoreRemoveUbiquitousMetadataOption`
+- `NSPersistentStoreUbiquitousContainerIdentifierKey`
+- `NSPersistentStoreRebuildFromUbiquitousContentOption`
+
+**Migration path**:
+- iOS 13+: Use `NSPersistentCloudKitContainer`
+- iOS 17+: Use `SwiftData`
+
+After removing these keys, the local persistent store remains usable (without iCloud sync). Plan a separate migration for cloud sync.
+
+---
+
+## Liquid Glass
+
+### Q23: Floating TabBar breaks my bottom-aligned UI (FAB, bottom sheet, etc.)
+
+iOS 26 TabBar is now **floating** instead of full-width docked. This changes `safeAreaInsets.bottom`.
+
+**Symptoms**:
+- Floating action button (FAB) sits too low or overlaps the TabBar
+- Custom bottom sheets have incorrect bottom padding
+- Manually calculated `bottom: 80` constants no longer align
+
+**Fix**:
+- Use `UIViewController.additionalSafeAreaInsets` instead of hardcoded padding
+- Respond to `viewSafeAreaInsetsDidChange()` to recalculate layouts dynamically
+- For SwiftUI, use `safeAreaInset(edge: .bottom)` with dynamic content
+
+### Q24: My custom navigation bar hit-testing is broken after Liquid Glass
+
+Liquid Glass causes the system to **auto-insert `UIDropShadowView`** behind navigation bars and toolbars. This can interfere with:
+- Custom hit-testing logic that traverses `subviews`
+- Code that assumes `navigationBar.subviews.first` is your custom view
+- View-index-based logic
+
+**Fix**:
+- Do not rely on exact subview indexes for system bars
+- Use `UINavigationBar.standardAppearance` / `scrollEdgeAppearance` for customization instead of manual subview manipulation
+- If you must traverse subviews, filter by class type rather than index
+
+### Q25: Custom background colors look wrong with Liquid Glass
+
+Liquid Glass uses **refraction layers** that expect translucency. Custom solid `backgroundColor` on `UINavigationBar`, `UITabBar`, or `UIToolbar` creates visual seams.
+
+**Fix**:
+- Remove custom `backgroundColor` on these bars
+- Use `UIBlurEffect` / `UIVisualEffectView` if you need a custom background
+- Or let the system apply the default glass material
+
+---
+
 ## Testing
 
 ### Q19: What is the minimum device matrix I should test?
