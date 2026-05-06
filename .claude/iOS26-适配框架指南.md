@@ -284,7 +284,7 @@ git merge feature/ios26-phase2
    - window.rootViewController 链式调用
    - window.visibleViewController 链式调用
    - UNNotificationPresentationOptionAlert
-   - UNAuthorizationOptionAlert
+   - UNAuthorizationOptionAlert (NOT deprecated — no action needed)
    - UIApplication.shared.statusBarStyle 设置
 
 3. 第三方 SDK 检测
@@ -456,24 +456,28 @@ if (iOS 13+) {
 
 | 废弃枚举 | 替代枚举 | 适用版本 |
 |---------|---------|---------|
-| `UNNotificationPresentationOptionAlert` | `UNNotificationPresentationOptionBanner` + `UNNotificationPresentationOptionList` | iOS 26+ |
-| `UNAuthorizationOptionAlert` | `UNAuthorizationOptionBanner` | iOS 26+ |
+| `UNNotificationPresentationOptionAlert` | `UNNotificationPresentationOptionBanner` + `UNNotificationPresentationOptionList` | iOS 14.0+ |
+| `UNAuthorizationOptionAlert` | Still valid — do NOT replace | All versions |
 
 **适配逻辑**:
 ```
-if (iOS 26+) {
+if (iOS 14.0+) {
     使用新枚举 (Banner | List)
 } else {
     使用旧枚举 (Alert)
 }
 ```
 
+> ⚠️ **注意区分两个 Options 类型**：
+> - `UNNotificationPresentationOptions` 的 `.alert` 在 iOS 14.0 废弃 → 用 `.banner + .list`
+> - `UNAuthorizationOptions` 的 `.alert` **没有被废弃**，iOS 26 SDK 中仍然有效，不需要替换
+
 **扫描规则**:
 
 | 规则 ID | 模式 | 文件类型 | 严重程度 |
 |--------|------|---------|---------|
 | NOTIF-001 | `UNNotificationPresentationOptionAlert` | .swift, .m, .mm | Warning |
-| NOTIF-002 | `UNAuthorizationOptionAlert` | .swift, .m, .mm | Warning |
+| NOTIF-002 | `UNAuthorizationOptionAlert` | .swift, .m, .mm | Removed — not deprecated |
 
 #### 5.2.3 状态栏样式 API
 

@@ -23,7 +23,7 @@ Trigger this skill when the user mentions any of the following:
 - Liquid Glass design language
 - `UIDesignRequiresCompatibility`
 - April 28, 2026 deadline
-- `UNNotificationPresentationOptionAlert` / `UNAuthorizationOptionAlert` warnings
+- `UNNotificationPresentationOptionAlert` warnings
 
 ## Standard Workflow
 
@@ -36,7 +36,7 @@ When assisting with iOS 26 adaptation, **always follow this flow**:
 2. Scan Project
    ├── Use scripts/ios26-scanner.py (if available in user's project)
    └── Or grep for: keyWindow, delegate.window, UNNotificationPresentationOptionAlert,
-       UNAuthorizationOptionAlert, UIApplicationSceneManifest, statusBarStyle
+       UIApplicationSceneManifest, statusBarStyle
 
 3. Determine Strategy (A / B / C)
    ├── Strategy A: Release before 2026-04-28 → branch-based adaptation
@@ -84,14 +84,15 @@ When assisting with iOS 26 adaptation, **always follow this flow**:
 
 When user needs copy-pasteable code, point them to the `templates/` directory:
 
-- `templates/swift/UIApplication+Extension.swift`
+- `templates/swift/UIApplication+MainWindow.swift`
 - `templates/swift/SceneDelegate.swift`
 - `templates/swift/AppDelegate+Setup.swift`
-- `templates/swift/NotificationAdapter.swift`
-- `templates/objc/UIApplication+Extension.h/.m`
+- `templates/swift/UNNotificationOptions+Adapter.swift`
+- `templates/objc/UIApplication+MainWindow.h/.m`
 - `templates/objc/SceneDelegate.h/.m`
 - `templates/objc/AppDelegate+Setup.h/.m`
-- `templates/objc/NotificationAdapter.h/.m`
+- `templates/objc/UNNotificationOptionsAdapter.h/.m`
+- `templates/mixed/README.md` — bridging patterns for mixed Swift/Objective-C projects
 
 ## Common Pitfalls to Warn About
 
@@ -103,9 +104,12 @@ When user needs copy-pasteable code, point them to the `templates/` directory:
 
 ## Language-Specific Notes
 
-- If user's project is **Swift**, default to Swift examples but mention Objective-C equivalents briefly if mixed codebase is suspected.
+- If user's project is **Swift**, default to Swift examples. Mention Objective-C equivalents only if the user asks or if mixed files are found.
 - If user's project is **Objective-C**, default to Objective-C examples.
-- If **mixed**, generate both and clearly label them.
+- If **mixed**, reference `templates/mixed/README.md` for bridging strategy, then generate the specific files the user needs:
+  - Window access → Objective-C category (single source of truth, visible to Swift via bridging header)
+  - AppDelegate/SceneDelegate cross-language calls → `@objc` / bridging header guidance
+  - Always label which language each file is in
 
 ## Author
 

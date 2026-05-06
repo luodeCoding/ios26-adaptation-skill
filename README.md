@@ -129,7 +129,7 @@ ios26-adaptation-skill/
 | `keyWindow` | `UIApplication.mainWindow` | `templates/swift/UIApplication+MainWindow.swift` |
 | `delegate.window` | `UIApplication.mainWindow` | Same as above |
 | `UNNotificationPresentationOptionAlert` | `.banner \| .list` | `templates/swift/UNNotificationOptions+Adapter.swift` |
-| `UNAuthorizationOptionAlert` | `.banner` | Same as above |
+| `UNAuthorizationOptionAlert` | Still valid — do NOT replace | Same as above |
 
 ### Scanning Script
 

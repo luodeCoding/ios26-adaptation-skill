@@ -8,7 +8,7 @@
 @implementation NotificationAdapter
 
 + (UNNotificationPresentationOptions)presentationOptions {
-    if (@available(iOS 26.0, *)) {
+    if (@available(iOS 14.0, *)) {
         return UNNotificationPresentationOptionBanner |
                UNNotificationPresentationOptionList |
                UNNotificationPresentationOptionSound |
@@ -21,15 +21,11 @@
 }
 
 + (UNAuthorizationOptions)authorizationOptions {
-    if (@available(iOS 26.0, *)) {
-        return UNAuthorizationOptionBanner |
-               UNAuthorizationOptionSound |
-               UNAuthorizationOptionBadge;
-    } else {
-        return UNAuthorizationOptionAlert |
-               UNAuthorizationOptionSound |
-               UNAuthorizationOptionBadge;
-    }
+    // UNAuthorizationOptionAlert is NOT deprecated and remains valid in iOS 26 SDK.
+    // UNAuthorizationOptionBanner does NOT exist in the SDK.
+    return UNAuthorizationOptionAlert |
+           UNAuthorizationOptionSound |
+           UNAuthorizationOptionBadge;
 }
 
 @end

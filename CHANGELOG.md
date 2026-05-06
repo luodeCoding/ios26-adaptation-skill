@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.0] - 2026-05-06
+
+### Added
+- `templates/mixed/README.md` — bridging patterns for Swift/Objective-C mixed projects
+- Complete Objective-C implementation examples in `SKILL.md` (UIApplication+MainWindow, AppDelegate+Setup, SceneDelegate)
+- Language-specific sections in `SKILL.md` (Swift / Objective-C / Mixed)
+
+### Fixed
+- **Critical correction**: `UNNotificationPresentationOptionAlert` was deprecated in **iOS 14.0**, not iOS 26.0 — updated all templates and docs
+- **Critical correction**: `UNAuthorizationOptionAlert` is **NOT deprecated** in iOS 26 SDK — removed replacement logic from all templates
+- Removed `NOTIF-002` scanner rule that incorrectly flagged `UNAuthorizationOptionAlert` as deprecated
+- Updated `AGENTS.md` language-specific notes with clearer mixed-project guidance
+- Fixed template filename references in `AGENTS.md` (`UIApplication+MainWindow`, `UNNotificationOptions+Adapter`)
+
 ## [1.1.0] - 2026-04-14
 
 ### Added
@@ -11,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `UIApplication+Extension` (unified window/navigation access)
   - `SceneDelegate` (full lifecycle and URL forwarding implementation)
   - `AppDelegate+Setup` (dual-path refactoring examples)
-  - `NotificationAdapter` (centralized iOS 26 notification option adapter)
+  - `NotificationAdapter` (centralized notification option adapter for deprecated API changes)
 - `scripts/ios26-scanner.py` — automated project scanner that detects deprecated APIs and architectural gaps
 - `docs/faq.md` — comprehensive FAQ covering strategy, build errors, and Liquid Glass
 - `AGENTS.md` — agent usage guide for Claude Code integration

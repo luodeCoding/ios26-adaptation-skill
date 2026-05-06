@@ -122,7 +122,19 @@ See `templates/swift/SceneDelegate.swift` or `templates/objc/SceneDelegate.m` fo
 
 ### Q18: Build warning: `UNNotificationPresentationOptionAlert` is deprecated
 
-Replace it with a version-checked call using `.banner` and `.list` on iOS 26+. See `templates/swift/NotificationAdapter.swift` or `templates/objc/NotificationAdapter.h/.m`.
+`UNNotificationPresentationOptionAlert` was deprecated in **iOS 14.0**, not iOS 26.0. Replace it with a version-checked call using `.banner` and `.list` on iOS 14.0+:
+
+```swift
+if #available(iOS 14.0, *) {
+    completionHandler([.banner, .list, .sound, .badge])
+} else {
+    completionHandler([.alert, .sound, .badge])
+}
+```
+
+> ⚠️ **Do NOT confuse with `UNAuthorizationOptions`**: `UNAuthorizationOptionAlert` is **NOT deprecated** and remains valid in iOS 26 SDK. There is no `UNAuthorizationOptionBanner` — it does not exist in the SDK.
+
+See `templates/swift/UNNotificationOptions+Adapter.swift` or `templates/objc/UNNotificationOptionsAdapter.h/.m`.
 
 ---
 

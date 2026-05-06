@@ -12,11 +12,11 @@ NS_ASSUME_NONNULL_BEGIN
 @interface NotificationAdapter : NSObject
 
 /// Presentation options for notification foreground display.
-/// Replaces deprecated UNNotificationPresentationOptionAlert with Banner and List on iOS 26+.
+/// Replaces deprecated UNNotificationPresentationOptionAlert with Banner and List on iOS 14.0+.
 + (UNNotificationPresentationOptions)presentationOptions;
 
 /// Authorization options for requesting push notification permission.
-/// Replaces deprecated UNAuthorizationOptionAlert with Banner on iOS 26+.
+/// UNAuthorizationOptionAlert is NOT deprecated and remains valid in iOS 26 SDK.
 + (UNAuthorizationOptions)authorizationOptions;
 
 @end

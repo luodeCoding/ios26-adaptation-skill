@@ -132,6 +132,6 @@ python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py \
 - `keyWindow` 使用
 - `delegate.window` 使用
 - `UNNotificationPresentationOptionAlert`
-- `UNAuthorizationOptionAlert`
+- `UNAuthorizationOptionAlert` (NOT deprecated — no action needed)
 - SceneDelegate 配置状态
 - AppDelegate `sharedInstance` 方法

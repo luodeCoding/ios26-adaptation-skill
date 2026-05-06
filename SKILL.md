@@ -110,8 +110,8 @@ Build with iOS 26 SDK, maintain existing UI appearance
 |---------------|-------------|----------|
 | `keyWindow` | Unified window access interface | Error |
 | `delegate.window` | Unified window access interface | Error |
-| `UNNotificationPresentationOptionAlert` | `Banner \| List` | Warning |
-| `UNAuthorizationOptionAlert` | `Banner` | Warning |
+| `UNNotificationPresentationOptionAlert` | `Banner \| List` (iOS 14.0+) | Warning |
+| `UNAuthorizationOptionAlert` | Still valid — do NOT replace | — |
 
 #### 3. SceneDelegate Architecture
 
@@ -165,10 +165,19 @@ Build with iOS 26 SDK, maintain existing UI appearance
 </dict>
 ```
 
-#### 5. Complete Implementation Example (Swift)
+#### 5. Complete Implementation Examples
 
-Below is a minimal but complete example for a typical iOS app supporting iOS 12+.
-Production-ready versions with Objective-C support are available in `templates/`.
+Select the section matching your project's primary language:
+
+- [Swift Projects](#swift-projects)
+- [Objective-C Projects](#objective-c-projects)
+- [Mixed (Swift/Objective-C) Projects](#mixed-swiftobjective-c-projects)
+
+Production-ready templates for each are in `templates/swift/`, `templates/objc/`, and `templates/mixed/`.
+
+##### Swift Projects
+
+Below is a minimal but complete example for a typical Swift iOS app supporting iOS 12+.
 
 **UIApplication+Extension.swift**
 ```swift
@@ -296,6 +305,273 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 }
 ```
 
+##### Objective-C Projects
+
+Below is a minimal but complete example for a typical Objective-C iOS app supporting iOS 12+.
+
+**UIApplication+MainWindow.h**
+```objc
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface UIApplication (Extension)
+
+/// Returns the current key window, compatible with both iOS 12 and iOS 13+.
+- (nullable UIWindow *)mainWindow;
+
+/// Returns the topmost visible view controller from the current window.
+- (nullable UIViewController *)visibleViewController;
+
+/// Returns the current active navigation controller, if any.
+- (nullable UINavigationController *)currentNavigationController;
+
+@end
+
+NS_ASSUME_NONNULL_END
+```
+
+**UIApplication+MainWindow.m**
+```objc
+#import "UIApplication+MainWindow.h"
+
+@implementation UIApplication (Extension)
+
+- (nullable UIWindow *)mainWindow {
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in self.connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]] && scene.activationState == UISceneActivationStateForegroundActive) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                for (UIWindow *window in windowScene.windows) {
+                    if (window.isKeyWindow) {
+                        return window;
+                    }
+                }
+            }
+        }
+        
+        for (UIScene *scene in self.connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                for (UIWindow *window in windowScene.windows) {
+                    if (window.isKeyWindow) {
+                        return window;
+                    }
+                }
+            }
+        }
+        
+        for (UIWindow *window in self.windows) {
+            if (window.isKeyWindow) {
+                return window;
+            }
+        }
+        return nil;
+    } else {
+        return self.delegate.window;
+    }
+}
+
+- (nullable UIViewController *)visibleViewController {
+    UIViewController *rootViewController = self.mainWindow.rootViewController;
+    if (!rootViewController) {
+        return nil;
+    }
+    return [self findTopViewControllerFrom:rootViewController];
+}
+
+- (nullable UINavigationController *)currentNavigationController {
+    return self.visibleViewController.navigationController;
+}
+
+#pragma mark - Private Helpers
+
+- (UIViewController *)findTopViewControllerFrom:(UIViewController *)root {
+    if (root.presentedViewController) {
+        return [self findTopViewControllerFrom:root.presentedViewController];
+    }
+    if ([root isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *nav = (UINavigationController *)root;
+        if (nav.visibleViewController) {
+            return [self findTopViewControllerFrom:nav.visibleViewController];
+        }
+    }
+    if ([root isKindOfClass:[UITabBarController class]]) {
+        UITabBarController *tab = (UITabBarController *)root;
+        if (tab.selectedViewController) {
+            return [self findTopViewControllerFrom:tab.selectedViewController];
+        }
+    }
+    return root;
+}
+
+@end
+```
+
+**AppDelegate+Setup.h**
+```objc
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface AppDelegate (Setup)
+
+/// Class method to access the shared AppDelegate instance.
++ (instancetype)sharedInstance;
+
+/// Setup called once when the application launches.
+- (void)setupApplication:(nullable NSDictionary<UIApplicationLaunchOptionsKey, id> *)launchOptions;
+
+/// Setup called when a window is ready (iOS 13+ via SceneDelegate, iOS 12 directly).
+- (void)setupSceneUI:(UIWindow *)window;
+
+@end
+
+NS_ASSUME_NONNULL_END
+```
+
+**AppDelegate+Setup.m**
+```objc
+#import "AppDelegate+Setup.h"
+
+@implementation AppDelegate (Setup)
+
++ (instancetype)sharedInstance {
+    return (AppDelegate *)[UIApplication sharedApplication].delegate;
+}
+
+- (void)setupApplication:(NSDictionary<UIApplicationLaunchOptionsKey, id> *)launchOptions {
+    // One-time SDK initializations (analytics, push setup, etc.)
+}
+
+- (void)setupSceneUI:(UIWindow *)window {
+    UIViewController *rootViewController = [[UIViewController alloc] init]; // Replace with your root VC
+    UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:rootViewController];
+    window.rootViewController = navController;
+    [window makeKeyAndVisible];
+    
+    if (@available(iOS 13.0, *)) {
+        // iOS 13+ uses SceneDelegate.window; no need to store in AppDelegate
+    } else {
+        self.window = window;
+    }
+}
+
+@end
+```
+
+**SceneDelegate.h**
+```objc
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface SceneDelegate : UIResponder <UIWindowSceneDelegate>
+
+@property (strong, nonatomic) UIWindow * window;
+
+@end
+
+NS_ASSUME_NONNULL_END
+```
+
+**SceneDelegate.m**
+```objc
+#import "SceneDelegate.h"
+#import "AppDelegate.h"
+
+@implementation SceneDelegate
+
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
+    if (![scene isKindOfClass:[UIWindowScene class]]) return;
+    
+    UIWindowScene *windowScene = (UIWindowScene *)scene;
+    UIWindow *window = [[UIWindow alloc] initWithWindowScene:windowScene];
+    self.window = window;
+    
+    [[AppDelegate sharedInstance] setupSceneUI:window];
+}
+
+- (void)sceneDidBecomeActive:(UIScene *)scene {
+    [[AppDelegate sharedInstance] applicationDidBecomeActive:[UIApplication sharedApplication]];
+}
+
+- (void)sceneWillResignActive:(UIScene *)scene {
+    [[AppDelegate sharedInstance] applicationWillResignActive:[UIApplication sharedApplication]];
+}
+
+- (void)sceneWillEnterForeground:(UIScene *)scene {
+    [[AppDelegate sharedInstance] applicationWillEnterForeground:[UIApplication sharedApplication]];
+}
+
+- (void)sceneDidEnterBackground:(UIScene *)scene {
+    [[AppDelegate sharedInstance] applicationDidEnterBackground:[UIApplication sharedApplication]];
+}
+
+- (void)sceneDidDisconnect:(UIScene *)scene {
+    // Optional: perform cleanup when scene is discarded by the system
+}
+
+@end
+```
+
+##### Mixed (Swift/Objective-C) Projects
+
+Mixed projects require extra care because `AppDelegate` and `SceneDelegate` may be written in different languages, and window-access helpers must be callable from both sides.
+
+**Recommended Architecture**
+
+| Decision | Recommendation |
+|----------|----------------|
+| Window Access | Implement in Objective-C (`templates/objc/UIApplication+MainWindow`). Swift sees it automatically via the bridging header as `UIApplication.shared.mainWindow()`. |
+| AppDelegate is Objective-C, SceneDelegate is Swift | Use the Objective-C AppDelegate template. Swift SceneDelegate calls through the bridging header. |
+| AppDelegate is Swift, SceneDelegate is Objective-C | Mark `sharedInstance()` and `setupSceneUI(_:)` with `@objc` / `@objcMembers` so Objective-C SceneDelegate can call them. |
+
+**Bridging Header Example (`YourProject-Bridging-Header.h`)**
+```objc
+#import "UIApplication+MainWindow.h"
+#import "AppDelegate.h"   // If AppDelegate is Objective-C
+```
+
+**Swift AppDelegate (exposed to Objective-C)**
+```swift
+import UIKit
+
+@main
+@objcMembers
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    var window: UIWindow?
+
+    class func sharedInstance() -> AppDelegate? {
+        return UIApplication.shared.delegate as? AppDelegate
+    }
+
+    func setupApplication(launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
+        // One-time SDK initializations (analytics, push setup, etc.)
+    }
+
+    func setupSceneUI(window: UIWindow) {
+        let root = UINavigationController(rootViewController: RootViewController())
+        window.rootViewController = root
+        window.makeKeyAndVisible()
+
+        if #available(iOS 13.0, *) {
+            // SceneDelegate owns the window on iOS 13+
+        } else {
+            self.window = window
+        }
+    }
+
+    func application(_ application: UIApplication,
+                     configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+    }
+}
+```
+
+See `templates/mixed/README.md` for the full mixed-project guide, additional bridging patterns, and cross-language lifecycle forwarding details.
+
 ### Phase 1 Checklist
 
 #### Preparation
@@ -319,6 +595,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 - [ ] Replace all deprecated window access
 - [ ] Replace notification option enums
 - [ ] Add Info.plist configurations
+- [ ] **Mixed projects only**: Verify bridging header includes `UIApplication+MainWindow`
+- [ ] **Mixed projects only**: Confirm `@objc` exposure for cross-language AppDelegate/SceneDelegate calls
 
 #### Verification
 - [ ] Build succeeds with iOS 26 SDK
@@ -511,7 +789,7 @@ Common problems after removing `UIDesignRequiresCompatibility`:
 | Rule ID | Pattern | Severity |
 |---------|---------|----------|
 | NOTIF-001 | `UNNotificationPresentationOptionAlert` | Warning |
-| NOTIF-002 | `UNAuthorizationOptionAlert` | Warning |
+| NOTIF-002 | `UNAuthorizationOptionAlert` | Removed — not deprecated |
 
 ### Status Bar Patterns
 
@@ -572,7 +850,7 @@ completionHandler(UNNotificationPresentationOptionAlert |
 **After**:
 ```swift
 // Swift
-if #available(iOS 26.0, *) {
+if #available(iOS 14.0, *) {
     completionHandler([.banner, .list, .sound, .badge])
 } else {
     completionHandler([.alert, .sound, .badge])
@@ -581,7 +859,7 @@ if #available(iOS 26.0, *) {
 
 ```objc
 // Objective-C
-if (@available(iOS 26.0, *)) {
+if (@available(iOS 14.0, *)) {
     completionHandler(UNNotificationPresentationOptionBanner |
                      UNNotificationPresentationOptionList |
                      UNNotificationPresentationOptionSound |
@@ -611,27 +889,17 @@ UNAuthorizationOptions options = UNAuthorizationOptionAlert |
 **After**:
 ```swift
 // Swift
-let options: UNAuthorizationOptions
-if #available(iOS 26.0, *) {
-    options = [.banner, .sound, .badge]
-} else {
-    options = [.alert, .sound, .badge]
-}
+let options: UNAuthorizationOptions = [.alert, .sound, .badge]
 ```
 
 ```objc
 // Objective-C
-UNAuthorizationOptions options;
-if (@available(iOS 26.0, *)) {
-    options = UNAuthorizationOptionBanner |
-              UNAuthorizationOptionSound |
-              UNAuthorizationOptionBadge;
-} else {
-    options = UNAuthorizationOptionAlert |
-              UNAuthorizationOptionSound |
-              UNAuthorizationOptionBadge;
-}
+UNAuthorizationOptions options = UNAuthorizationOptionAlert |
+                                 UNAuthorizationOptionSound |
+                                 UNAuthorizationOptionBadge;
 ```
+
+> ⚠️ **Important**: `UNAuthorizationOptionAlert` is **NOT deprecated** and remains valid in iOS 26 SDK. `UNAuthorizationOptionBanner` does **NOT exist** in the SDK — do not use it.
 
 ---
 

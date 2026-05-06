@@ -11,11 +11,13 @@ templates/
 │   ├── SceneDelegate.swift                  # 完整 SceneDelegate 实现
 │   ├── AppDelegate+Setup.swift              # AppDelegate 改造示例
 │   └── UNNotificationOptions+Adapter.swift  # 通知选项适配器
-└── objc/                     # Objective-C 模板
-    ├── UIApplication+MainWindow.h/.m
-    ├── SceneDelegate.h/.m
-    ├── AppDelegate+Setup.h/.m
-    └── UNNotificationOptionsAdapter.h/.m
+├── objc/                     # Objective-C 模板
+│   ├── UIApplication+MainWindow.h/.m
+│   ├── SceneDelegate.h/.m
+│   ├── AppDelegate+Setup.h/.m
+│   └── UNNotificationOptionsAdapter.h/.m
+└── mixed/                    # Swift/Objective-C 混合项目
+    └── README.md                            # 桥接策略与跨语言调用指南
 ```
 
 ## 使用方法

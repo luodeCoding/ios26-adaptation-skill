@@ -14,11 +14,13 @@ templates/
 │   ├── SceneDelegate.swift                  # SceneDelegate implementation
 │   ├── AppDelegate+Setup.swift              # AppDelegate refactoring example
 │   └── UNNotificationOptions+Adapter.swift  # Notification options adapter
-└── objc/                     # Objective-C templates
-    ├── UIApplication+MainWindow.h/.m
-    ├── SceneDelegate.h/.m
-    ├── AppDelegate+Setup.h/.m
-    └── UNNotificationOptionsAdapter.h/.m
+├── objc/                     # Objective-C templates
+│   ├── UIApplication+MainWindow.h/.m
+│   ├── SceneDelegate.h/.m
+│   ├── AppDelegate+Setup.h/.m
+│   └── UNNotificationOptionsAdapter.h/.m
+└── mixed/                    # Mixed Swift/Objective-C projects
+    └── README.md                            # Bridging strategies & cross-language guide
 ```
 
 ## How to Use

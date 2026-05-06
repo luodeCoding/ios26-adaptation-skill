@@ -100,14 +100,8 @@ RULES = [
         "severity": "warning",
         "suggestion": "Use NotificationAdapter.presentationOptions or version-check to Banner|List",
     },
-    {
-        "id": "NOTIF-002",
-        "name": "Deprecated UNAuthorizationOptionAlert",
-        "pattern": re.compile(r"UNAuthorizationOptionAlert"),
-        "extensions": {".swift", ".m", ".mm"},
-        "severity": "warning",
-        "suggestion": "Use NotificationAdapter.authorizationOptions or version-check to Banner",
-    },
+    # NOTIF-002 removed: UNAuthorizationOptionAlert is NOT deprecated in iOS 26 SDK.
+    # Do NOT flag it — it remains valid and should not be replaced.
     {
         "id": "STATUS-001",
         "name": "Global statusBarStyle assignment",

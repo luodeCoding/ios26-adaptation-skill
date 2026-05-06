@@ -10,9 +10,9 @@ import UserNotifications
 public enum UNNotificationOptionsAdapter {
     
     /// Presentation options for notification foreground display.
-    /// Replaces deprecated `.alert` with `.banner` and `.list` on iOS 26+.
+    /// `.alert` was deprecated in iOS 14.0; use `.banner` and `.list` on iOS 14+.
     static var presentationOptions: UNNotificationPresentationOptions {
-        if #available(iOS 26.0, *) {
+        if #available(iOS 14.0, *) {
             return [.banner, .list, .sound, .badge]
         } else {
             return [.alert, .sound, .badge]
@@ -20,13 +20,10 @@ public enum UNNotificationOptionsAdapter {
     }
     
     /// Authorization options for requesting push notification permission.
-    /// Replaces deprecated `.alert` with `.banner` on iOS 26+.
+    /// `.alert` is NOT deprecated and remains valid in iOS 26 SDK.
+    /// `.banner` does NOT exist for UNAuthorizationOptions.
     static var authorizationOptions: UNAuthorizationOptions {
-        if #available(iOS 26.0, *) {
-            return [.banner, .sound, .badge]
-        } else {
-            return [.alert, .sound, .badge]
-        }
+        return [.alert, .sound, .badge]
     }
 }
 
