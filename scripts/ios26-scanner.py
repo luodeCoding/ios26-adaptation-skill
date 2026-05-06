@@ -174,6 +174,54 @@ RULES = [
         "severity": "warning",
         "suggestion": "Implement preferredStatusBarStyle in ViewController instead",
     },
+    {
+        "id": "STOREKIT-001",
+        "name": "StoreKit 1 API usage (removed in Xcode 26)",
+        "pattern": re.compile(r"SKPaymentTransaction|SKProductsRequest|SKProductsRequestDelegate|SKPaymentQueue|SKPaymentTransactionObserver"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "error",
+        "suggestion": "Migrate to StoreKit 2 (Product.purchase(), Transaction, App Store Server API). iOS 15+ required.",
+    },
+    {
+        "id": "SIRIKIT-001",
+        "name": "Deprecated SiriKit intent domain",
+        "pattern": re.compile(r"INSetAudioSourceInCarIntent|INSetClimateSettingsInCarIntent|INSetDefrosterSettingsInCarIntent|INSetSeatSettingsInCarIntent|INSaveProfileInCarIntent|INSetProfileInCarIntent|INSetRadioStationIntent|INAppendToNoteIntent|INCreateTaskListIntent|INDeleteTasksIntent|INPayBillIntent|INSearchForBillsIntent|INTransferMoneyIntent|INSearchForPhotosIntent|INStartPhotoPlaybackIntent|INGetVisualCodeIntent|INSearchCallHistoryIntent"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "Migrate to App Intents framework. SiriKit intent domains are deprecated.",
+    },
+    {
+        "id": "SWIFTUI-001",
+        "name": "Deprecated NavigationView (SwiftUI)",
+        "pattern": re.compile(r"NavigationView\b"),
+        "extensions": {".swift"},
+        "severity": "warning",
+        "suggestion": "Use NavigationStack (iOS 16+) with navigationDestination(for:)",
+    },
+    {
+        "id": "SWIFTUI-002",
+        "name": "Deprecated cornerRadius modifier (SwiftUI)",
+        "pattern": re.compile(r"\.cornerRadius\("),
+        "extensions": {".swift"},
+        "severity": "warning",
+        "suggestion": "Use clipShape(.rect(cornerRadius:)) or RoundedRectangle instead",
+    },
+    {
+        "id": "SWIFTUI-003",
+        "name": "Deprecated foregroundColor modifier (SwiftUI)",
+        "pattern": re.compile(r"\.foregroundColor\("),
+        "extensions": {".swift"},
+        "severity": "warning",
+        "suggestion": "Use foregroundStyle() instead",
+    },
+    {
+        "id": "PHOTOS-001",
+        "name": "Deprecated UIImagePickerController",
+        "pattern": re.compile(r"UIImagePickerController"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "Use PHPickerViewController (PhotosUI, iOS 14+) for photo selection",
+    },
 ]
 
 DEFAULT_EXCLUDES = {
@@ -322,6 +370,28 @@ def scan_project(project_path: Path, extra_excludes: List[str]) -> ScanResult:
         result.issues.extend(file_issues)
 
     result.architecture = check_architecture(project_path)
+
+    # Check for Privacy Manifest
+    has_privacy_manifest = False
+    for privacy_file in project_path.rglob("PrivacyInfo.xcprivacy"):
+        if any(part in DEFAULT_EXCLUDES for part in privacy_file.parts):
+            continue
+        has_privacy_manifest = True
+        break
+
+    if not has_privacy_manifest:
+        result.issues.append(
+            ScanIssue(
+                rule_id="PRIVACY-001",
+                severity="error",
+                message="Missing Privacy Manifest (PrivacyInfo.xcprivacy)",
+                file=str(project_path),
+                line=0,
+                column=0,
+                match="PrivacyInfo.xcprivacy not found",
+                suggestion="Create PrivacyInfo.xcprivacy and declare Required Reason APIs and data collection practices",
+            )
+        )
 
     # Add architecture infos
     if not result.architecture["has_scenedelegate"]:

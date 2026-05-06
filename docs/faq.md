@@ -246,6 +246,84 @@ Liquid Glass uses **refraction layers** that expect translucency. Custom solid `
 
 ---
 
+## App Store Submission
+
+### Q26: App Store Connect rejected my build for missing Privacy Manifest
+
+Since May 2024, Apple requires every app to include a `PrivacyInfo.xcprivacy` file. iOS 26 submissions will be **automatically rejected** without it.
+
+**What to do**:
+1. In Xcode: File → New → App Privacy → name it `PrivacyInfo.xcprivacy`
+2. Add it to your app target
+3. Declare:
+   - **Required Reason APIs** you use (file timestamps, disk space, User Defaults, etc.)
+   - **Data types** you collect (with usage purposes)
+   - **Third-party SDKs** that don't bundle their own manifest
+4. Generate a Privacy Report in Xcode Organizer to validate
+
+> ⚠️ Common blocker: Firebase, Facebook SDK, or older analytics SDKs may not include a privacy manifest. Update to the latest version, or manually declare their data usage in your app's manifest.
+
+### Q27: Build error: `SKPaymentTransaction` is deprecated / not found
+
+StoreKit 1 APIs (`SKPaymentTransaction`, `SKProductsRequest`, `SKPaymentQueue`) are **removed** in Xcode 26. You must migrate to **StoreKit 2** (iOS 15+).
+
+**Quick migration**:
+| Old (StoreKit 1) | New (StoreKit 2) |
+|-----------------|-----------------|
+| `SKProductsRequest` | `Product.products(for: ids)` |
+| `SKPaymentQueue.add()` | `product.purchase()` |
+| `SKPaymentTransactionObserver` | `Transaction.updates` async sequence |
+| Receipt `verifyReceipt` | App Store Server API |
+
+If you support iOS 12-14, wrap StoreKit 2 code in `#available(iOS 15.0, *)` and keep StoreKit 1 for older versions.
+
+### Q28: Siri no longer responds to my app's voice commands
+
+Apple has deprecated multiple SiriKit intent domains. If your app uses any of these, Siri will reply "I can't support that request":
+
+- CarPlay intents (climate, audio, seat settings)
+- Lists & Notes intents
+- Payment intents (transfer money, pay bill)
+- Photo search / playback intents
+- Visual Code intents
+- VoIP call history intents
+
+**Migration**: Convert your SiriKit Intents to **App Intents**. Xcode provides automatic conversion: select your `.intentdefinition` file → Editor → Convert to App Intents.
+
+### Q29: SwiftUI build warnings: `NavigationView` is deprecated
+
+SwiftUI modern API replacements for iOS 26 compatibility:
+
+| Deprecated | Use Instead |
+|-----------|-------------|
+| `NavigationView` | `NavigationStack` (iOS 16+) |
+| `.cornerRadius()` | `.clipShape(.rect(cornerRadius:))` |
+| `.foregroundColor()` | `.foregroundStyle()` |
+| `ObservableObject` / `@StateObject` | `@Observable` macro + `@State` (iOS 17+) |
+| `onChange(of:) { value in }` | `onChange(of:) { old, new in }` |
+| `presentationMode` | `@Environment(\.dismiss)` |
+
+These are warnings, not errors, but cleaning them up reduces technical debt.
+
+### Q30: Build warning: `UIImagePickerController` is deprecated
+
+Use `PHPickerViewController` (PhotosUI, iOS 14+) instead:
+
+```swift
+import PhotosUI
+
+var config = PHPickerConfiguration(photoLibrary: .shared())
+config.selectionLimit = 1
+config.filter = .images
+let picker = PHPickerViewController(configuration: config)
+picker.delegate = self
+present(picker, animated: true)
+```
+
+Benefits: no photo library permission required, supports multi-selection and filtering.
+
+---
+
 ## Testing
 
 ### Q19: What is the minimum device matrix I should test?

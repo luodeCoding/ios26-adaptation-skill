@@ -831,6 +831,32 @@ Common problems after removing `UIDesignRequiresCompatibility`:
 | STATUS-001 | `statusBarStyle = UIStatusBarStyle` | Warning |
 | STATUS-002 | `UIApplication.shared.*statusBarStyle` | Warning |
 
+### StoreKit Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| STOREKIT-001 | `SKPaymentTransaction`, `SKProductsRequest`, `SKPaymentQueue` | Error |
+
+### SiriKit Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| SIRIKIT-001 | Deprecated SiriKit intent domains (CarPlay, Lists, Payments, etc.) | Warning |
+
+### SwiftUI Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| SWIFTUI-001 | `NavigationView` | Warning |
+| SWIFTUI-002 | `.cornerRadius()` | Warning |
+| SWIFTUI-003 | `.foregroundColor()` | Warning |
+
+### Photos Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| PHOTOS-001 | `UIImagePickerController` | Warning |
+
 ---
 
 ## Code Replacement Templates
@@ -1038,6 +1064,94 @@ Beyond visual changes, Liquid Glass introduces structural layout differences:
 
 3. **Custom solid background colors clash** with glass refraction layers. Glass effects expect alpha/translucency; solid colors create visual seams.
    - **Fix**: Remove custom `backgroundColor` on `UINavigationBar`, `UITabBar`, `UIToolbar`. Let the system apply glass materials, or use `UIBlurEffect` / `UIVisualEffectView`.
+
+### Privacy Manifest (PrivacyInfo.xcprivacy)
+
+Since May 2024, **every app submitted to App Store Connect must include a `PrivacyInfo.xcprivacy` manifest file**. iOS 26 submissions will be rejected without it.
+
+**What to declare**:
+- **Required Reason APIs**: File timestamp, disk space, User Defaults, etc. — each needs an approved reason code
+- **Data collection categories**: What user data you collect and how it's used
+- **Third-party SDK declarations**: Every SDK must either bundle its own privacy manifest or be declared in yours
+
+**Quick setup**:
+1. In Xcode: File → New → App Privacy → name it `PrivacyInfo.xcprivacy`
+2. Add it to your app target
+3. Use Xcode's **Privacy Report** (Window → Organizer → Distribute App → Generate Privacy Report) to validate
+
+> ⚠️ **Third-party SDKs without manifests** are a common blocker. Check `pod outdated` / SPM for updates, or manually declare their data usage in your manifest.
+
+### StoreKit 1 → StoreKit 2 Migration
+
+StoreKit 1 APIs (`SKPaymentTransaction`, `SKProductsRequest`, `SKPaymentQueue`, `SKPaymentTransactionObserver`) are **removed** in Xcode 26, causing build failures.
+
+| StoreKit 1 | StoreKit 2 (iOS 15+) |
+|-----------|---------------------|
+| `SKProductsRequest` | `Product.products(for:)` |
+| `SKPaymentQueue` | `Product.purchase(confirmIn:options:)` |
+| `SKPaymentTransaction` | `Transaction` (JWS-signed) |
+| Receipt validation | App Store Server API |
+| `SKPaymentTransactionObserver` | `Transaction.updates` async sequence |
+
+**Backwards compatibility**: StoreKit 2 requires iOS 15+. If you support iOS 12-14, maintain dual-path logic:
+```swift
+if #available(iOS 15.0, *) {
+    // StoreKit 2 path
+} else {
+    // StoreKit 1 path (still compiles for older deployment targets)
+}
+```
+
+### SiriKit → App Intents Migration
+
+Apple has deprecated the following SiriKit intent domains. Siri will no longer support requests using these intents:
+
+- **CarPlay**: Set Audio Source, Climate Settings, Defroster, Seat Settings, Profile, Radio Station
+- **Lists & Notes**: Append to Note, Create Task List, Delete Tasks
+- **Payments**: Pay Bill, Search Bills, Transfer Money
+- **Photos**: Search Photos, Start Photo Playback
+- **Visual Codes**: Get Visual Code
+- **VoIP Calling**: Search Call History
+- **Ride Booking**: Deprecated (Maps/Shortcuts still support)
+
+**Migration**: Use the **App Intents** framework. Xcode provides automatic conversion from SiriKit Intents to App Intents.
+
+### SwiftUI Modern API Replacements
+
+If your project uses SwiftUI, update these deprecated patterns:
+
+| Deprecated | Modern Alternative | Since |
+|-----------|-------------------|-------|
+| `NavigationView` | `NavigationStack` | iOS 16 |
+| `.cornerRadius()` | `.clipShape(.rect(cornerRadius:))` | iOS 17 |
+| `.foregroundColor()` | `.foregroundStyle()` | iOS 17 |
+| `ObservableObject` / `@StateObject` | `@Observable` macro + `@State` | iOS 17 |
+| `onChange(of:) { value in }` | `onChange(of:) { old, new in }` | iOS 17 |
+| `presentationMode` | `@Environment(\.dismiss)` | iOS 15 |
+| `GeometryReader` (sizing) | `containerRelativeFrame()` | iOS 17 |
+
+> 💡 **Tip**: SwiftUI standard components (Button, List, TabView, etc.) automatically adapt to Liquid Glass when built with iOS 26 SDK — no code changes needed for basic usage.
+
+### Photos: UIImagePickerController → PHPickerViewController
+
+`UIImagePickerController` is deprecated. Use `PHPickerViewController` (PhotosUI, iOS 14+) for photo and video selection:
+
+```swift
+import PhotosUI
+
+var config = PHPickerConfiguration(photoLibrary: .shared())
+config.selectionLimit = 1
+config.filter = .images
+
+let picker = PHPickerViewController(configuration: config)
+picker.delegate = self
+present(picker, animated: true)
+```
+
+Benefits of PHPicker:
+- No photo library permission required (user grants per-selection)
+- Supports multi-selection, filtering, and Live Photos
+- Modern Swift async API available in iOS 15+
 
 ---
 
