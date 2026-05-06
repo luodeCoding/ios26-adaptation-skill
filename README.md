@@ -9,7 +9,7 @@
 > **Languages**: Objective-C / Swift  
 > **Platform**: iOS  
 > **Minimum iOS Version**: 12.0+  
-> **Last Updated**: 2026-04-21
+> **Last Updated**: 2026-05-06
 
 **This repository is an AI adaptation skill tool. It does not participate in any project compilation.**
 
