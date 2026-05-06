@@ -9,7 +9,8 @@
 > **语言**: Objective-C / Swift  
 > **平台**: iOS  
 > **最低 iOS 版本**: 12.0+  
-> **最后更新**: 2026-05-06
+> **最后更新**: 2026-05-06  
+> **版本**: [v1.5.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
 
 **本仓库是 AI 适配技能工具，不参与任何项目编译。**
 

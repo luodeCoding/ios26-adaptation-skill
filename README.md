@@ -9,7 +9,8 @@
 > **Languages**: Objective-C / Swift  
 > **Platform**: iOS  
 > **Minimum iOS Version**: 12.0+  
-> **Last Updated**: 2026-05-06
+> **Last Updated**: 2026-05-06  
+> **Version**: [v1.5.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
 
 **This repository is an AI adaptation skill tool. It does not participate in any project compilation.**
 
