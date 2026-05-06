@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.0] - 2026-05-06
+
+### Added
+- **`templates/PrivacyInfo.xcprivacy`** — Privacy Manifest template with required reason APIs and data collection examples
+- **`templates/swift/Swift6ConcurrencyAdapter.swift`** — Swift 6 strict concurrency migration patterns (@MainActor, @Sendable, async/await, global actors)
+- **`docs/sdk-compatibility.md`** — Third-party SDK iOS 26 compatibility cheat sheet (Firebase, Facebook, RevenueCat, Branch, etc.)
+- **`scripts/test_scanner.py`** — Unit test suite covering all 19 scanner rules + architecture checks + full project scan
+- **`.github/workflows/ci.yml`** — GitHub Actions CI pipeline (scanner tests, Python lint, markdown link validation)
+
 ## [1.4.0] - 2026-05-06
 
 ### Added (Round 2 QA Gap Analysis)

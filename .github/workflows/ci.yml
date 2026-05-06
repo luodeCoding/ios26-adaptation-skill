@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run scanner unit tests
+        working-directory: scripts
+        run: python3 test_scanner.py
+
+  lint-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 scripts/ios26-scanner.py scripts/test_scanner.py --max-line-length=120 --ignore=E501
+
+  validate-markdown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check markdown links
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --timeout 30 README.md README.zh.md SKILL.md CHANGELOG.md INTEGRATION.md docs/*.md
+          fail: false

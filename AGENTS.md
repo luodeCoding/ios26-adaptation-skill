@@ -88,11 +88,13 @@ When user needs copy-pasteable code, point them to the `templates/` directory:
 - `templates/swift/SceneDelegate.swift`
 - `templates/swift/AppDelegate+Setup.swift`
 - `templates/swift/UNNotificationOptions+Adapter.swift`
+- `templates/swift/Swift6ConcurrencyAdapter.swift` — Swift 6 strict concurrency patterns
 - `templates/objc/UIApplication+MainWindow.h/.m`
 - `templates/objc/SceneDelegate.h/.m`
 - `templates/objc/AppDelegate+Setup.h/.m`
 - `templates/objc/UNNotificationOptionsAdapter.h/.m`
 - `templates/mixed/README.md` — bridging patterns for mixed Swift/Objective-C projects
+- `templates/PrivacyInfo.xcprivacy` — Privacy Manifest template for App Store submission
 
 ## Common Pitfalls to Warn About
 
