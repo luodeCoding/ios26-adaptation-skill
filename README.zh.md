@@ -10,7 +10,7 @@
 > **平台**: iOS  
 > **最低 iOS 版本**: 12.0+  
 > **最后更新**: 2026-05-06  
-> **版本**: [v1.5.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
+> **版本**: [v1.5.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.zh.md)
 
 **本仓库是 AI 适配技能工具，不参与任何项目编译。**
 
@@ -101,7 +101,8 @@ ios26-adaptation-skill/
 ├── README.zh.md           # 中文版
 ├── SKILL.md               # 📘 AI 核心技能文档（详细适配指南）
 ├── AGENTS.md              # 🤖 Claude Code Agent 使用指南
-├── CHANGELOG.md           # 版本历史
+├── CHANGELOG.md           # 版本历史（英文）
+├── CHANGELOG.zh.md        # 版本历史（中文）
 ├── LICENSE                # MIT 许可证
 │
 ├── docs/                  # 📚 文档
