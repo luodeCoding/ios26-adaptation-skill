@@ -12,12 +12,12 @@ Usage:
 
 import argparse
 import json
-import os
+
 import re
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 
 @dataclass
