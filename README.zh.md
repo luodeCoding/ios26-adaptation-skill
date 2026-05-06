@@ -33,6 +33,18 @@
 | **2026-04-28** | 必须使用 iOS 26 SDK 构建 | 不合规将无法提交应用更新 |
 | **~2026-09** | Xcode 27 发布，Liquid Glass 强制启用 | `UIDesignRequiresCompatibility` 将被移除 |
 
+## 更新日志
+
+| 版本 | 日期 | 主要更新 |
+|------|------|---------|
+| **[v1.5.0](CHANGELOG.md)** | 2026-05-06 | Privacy Manifest 模板、Swift 6 并发适配模板、第三方 SDK 兼容性速查表、单元测试、CI |
+| **[v1.4.0](CHANGELOG.md)** | 2026-05-06 | StoreKit 2、SiriKit→App Intents、SwiftUI 现代 API、Photos 扫描规则 |
+| **[v1.3.0](CHANGELOG.md)** | 2026-05-06 | Swift 6 并发、TLS 1.2、CoreData、Liquid Glass 结构影响扫描规则 |
+| **[v1.1.0](CHANGELOG.md)** | 2026-04-14 | 生产模板、扫描脚本、FAQ、AGENTS.md |
+| **[v1.0.0](CHANGELOG.md)** | 2026-04-10 | 初始发布 — 两阶段策略、双语文档、检查清单 |
+
+> [查看完整更新日志 →](CHANGELOG.md)
+
 ## 两阶段适配
 
 ### 第一阶段：SDK 构建适配（2026-04-28 前）

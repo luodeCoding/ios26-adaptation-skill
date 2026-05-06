@@ -33,6 +33,18 @@ This repository is a **standalone skill knowledge base** for:
 | **2026-04-28** | Must build with iOS 26 SDK | Non-compliant submissions will be rejected |
 | **~2026-09** | Xcode 27 release, Liquid Glass mandatory | `UIDesignRequiresCompatibility` will be removed |
 
+## Changelog
+
+| Version | Date | Highlights |
+|---------|------|------------|
+| **[v1.5.0](CHANGELOG.md)** | 2026-05-06 | Privacy Manifest template, Swift 6 adapter, SDK compatibility sheet, unit tests, CI |
+| **[v1.4.0](CHANGELOG.md)** | 2026-05-06 | StoreKit 2, SiriKit→App Intents, SwiftUI modern APIs, Photos, Privacy Manifest scanner rules |
+| **[v1.3.0](CHANGELOG.md)** | 2026-05-06 | Swift 6 concurrency, TLS 1.2, CoreData keys, Liquid Glass structural impacts, scanner rules |
+| **[v1.1.0](CHANGELOG.md)** | 2026-04-14 | Production templates, scanner script, FAQ, AGENTS.md |
+| **[v1.0.0](CHANGELOG.md)** | 2026-04-10 | Initial release — two-phase strategy, bilingual docs, checklists |
+
+> [View full changelog →](CHANGELOG.md)
+
 ## Two-Phase Adaptation
 
 ### Phase 1: SDK Build Adaptation (Before 2026-04-28)
