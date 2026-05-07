@@ -20,16 +20,6 @@
 
 > GitHub：[github.com/luodeCoding/ios26-adaptation-skill](https://github.com/luodeCoding/ios26-adaptation-skill) ⭐
 
-![图2-Xcode报错痛点图](待补充：Xcode编译报错截图，红字高亮keyWindow废弃)
-> **图2：Xcode 报错痛点图**。截图你的 Xcode 编译报错界面，红字高亮 `'keyWindow' was deprecated in iOS 26.0`，让读者瞬间共鸣。
-
----
-
-## ⏰ 关键时间节点
-
-![图3-Phase1-2适配路线图](待补充：两阶段时间线信息图)
-> **图3：Phase 1/2 适配路线图**。左橙右蓝时间线，直观展示 4月28日 deadline 和 Xcode 27 的 Liquid Glass 强制启用节点。替代纯文字表格的第一印象。
-
 | 日期 | 要求 | 影响 |
 |------|------|------|
 | **2026-04-28** | 强制使用 iOS 26 SDK | 不合规 = 直接拒审 ❌ |
@@ -60,8 +50,8 @@
 
 ## 🔍 自动化扫描工具
 
-![图4-Scanner扫描对比图](待补充：Scanner左右对比演示图)
-> **图4：Scanner 扫描演示图**。左屏 = 有红色下划线的脏乱代码，右屏 = 分 ERROR/WARNING/INFO 三色的清晰扫描报告。已有提示词：platforms/images/prompts/03-scanner-demo.md
+![图2-工具核心效果](待补充：一张图展示工具如何帮你完成 iOS 26 适配)
+> **图2：工具核心效果**。这张图展示扫描工具的运行结果，或 Before/After 改造对比，让读者一眼看懂"这个工具能帮我做什么"。
 
 ### 一行命令检测废弃 API
 
@@ -119,9 +109,6 @@ RULES = [
 
 ## 📁 模板速览
 
-![图5-项目4模块架构图](待补充：4个方块信息图)
-> **图5：项目 4 模块架构图**。4 个等大方块（扫描/模板/指南/兼容），深色背景。让读者不看代码先理解项目组成。已有提示词：platforms/images/prompts/02-architecture.md
-
 ```
 templates/
 ├── swift/
@@ -139,9 +126,6 @@ templates/
 │   └── README.md                          # 混合项目桥接指南
 └── PrivacyInfo.xcprivacy                  # Privacy Manifest 模板
 ```
-
-![图6-代码Before-After对比](待补充：左右分栏代码对比图)
-> **图6：代码 Before/After 对比**。左（红底删除线：`UIApplication.shared.keyWindow`）→ 右（绿底高亮：`UIApplication.shared.mainWindow`）。证明模板"复制粘贴就能用"，降低读者尝试门槛。
 
 ---
 
