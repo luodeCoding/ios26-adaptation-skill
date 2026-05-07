@@ -1,6 +1,6 @@
 # 🚀 iOS 26 适配完全指南：自动化扫描 + 20+ 规则 + 踩坑实录
 
-> **TL;DR**：4 月 28 日 App Store 强制 iOS 26 SDK。本文分享一套 **AI 适配技能（Skill）**：把你的 AI 助手接入这套知识库，它能自动扫描你的项目、定位废弃 API、输出改造方案，并直接提供 Swift/OC 双语言模板。不需要手动跑脚本，AI 替你完成排查和适配。
+> **TL;DR**：4 月 28 日 App Store 强制 iOS 26 SDK。本文分享一套开源适配方案：Python 扫描脚本（20+ 规则）、Swift/OC 双语言模板、两轮 QA 排查发现的 15 个盲点。GitHub 已开源，可直接用于生产。
 
 <!--
 【图1：封面头图 / 文章头图】
@@ -17,6 +17,8 @@
 上周团队收到苹果邮件：**4 月 28 日之后，所有新提交和更新必须使用 iOS 26 SDK 构建**。deadline 就在眼前，但网上资料分散，缺乏系统性方案。
 
 于是我们做了两轮深度 QA 排查，整理出了这套**开源适配框架**。本文把项目背景、扫描工具实现、以及排查过程中发现的坑一次性讲清楚。
+
+> GitHub：[github.com/luodeCoding/ios26-adaptation-skill](https://github.com/luodeCoding/ios26-adaptation-skill) ⭐
 
 ![图2-Xcode报错痛点图](待补充：Xcode编译报错截图，红字高亮keyWindow废弃)
 > **图2：Xcode 报错痛点图**。截图你的 Xcode 编译报错界面，红字高亮 `'keyWindow' was deprecated in iOS 26.0`，让读者瞬间共鸣。
@@ -61,27 +63,13 @@
 ![图4-Scanner扫描对比图](待补充：Scanner左右对比演示图)
 > **图4：Scanner 扫描演示图**。左屏 = 有红色下划线的脏乱代码，右屏 = 分 ERROR/WARNING/INFO 三色的清晰扫描报告。已有提示词：platforms/images/prompts/03-scanner-demo.md
 
-### AI 自动扫描废弃 API
+### 一行命令检测废弃 API
 
-你把项目路径告诉 AI，AI 会调用内置扫描能力分析你的代码：
-
-```
-AI > 扫描项目：/path/to/your/ios/project
-
-# iOS 26 Adaptation Scan Report
-**Files Scanned:** 247
-**Total Issues:** 12  (Errors: 3, Warnings: 9)
-
-| Rule ID | Severity | File | Line | Message |
-|---------|----------|------|------|---------|
-| WINDOW-001 | ERROR | LoginVC.swift | 45 | Deprecated keyWindow usage |
-| STOREKIT-001 | ERROR | IAPManager.m | 128 | StoreKit 1 API removed |
-| PRIVACY-001 | ERROR | ./ | 0 | Missing PrivacyInfo.xcprivacy |
+```bash
+python3 scripts/ios26-scanner.py /path/to/your/ios/project
 ```
 
-**你不需要手动运行任何命令**，AI 会直接读取这套 Skill 中的规则配置，自动完成扫描并给出修复建议。
-
-输出示例（AI 直接展示）：
+输出示例：
 
 ```
 # iOS 26 Adaptation Scan Report
@@ -95,9 +83,7 @@ AI > 扫描项目：/path/to/your/ios/project
 | PRIVACY-001 | ERROR | ./ | 0 | Missing PrivacyInfo.xcprivacy |
 ```
 
-### 20+ 条内置扫描规则
-
-这套 Skill 内置了完整的规则引擎，AI 直接调用：
+### 20+ 条扫描规则
 
 | 类别 | 规则数 | 代表规则 |
 |------|--------|---------|
@@ -127,7 +113,7 @@ RULES = [
 ]
 ```
 
-新增规则只需在 Skill 配置中加 5 行字典，AI 立即生效。
+新增规则只需加 5 行代码，无需改扫描引擎。
 
 ---
 
@@ -187,26 +173,28 @@ templates/
 
 ## 🚀 快速开始
 
-```
-1. 把这套 iOS 26 Adaptation Skill 接入你的 AI 助手
-   （放到 AI 可读取的项目目录或知识库中）
+```bash
+# 1. 克隆项目
+git clone https://github.com/luodeCoding/ios26-adaptation-skill.git
 
-2. 告诉 AI："帮我做 iOS 26 适配"
+# 2. 扫描你的项目
+cd ios26-adaptation-skill
+python3 scripts/ios26-scanner.py /path/to/your/ios/project
 
-3. AI 自动完成：
-   - 扫描你的项目，定位所有废弃 API
-   - 判断你的发版时间，推荐 Strategy A/B/C
-   - 输出改造代码（Swift/OC/Mixed 三选一）
-   - 提供检查清单，逐项验证
+# 3. 根据扫描结果，复制模板修改
+cp templates/swift/*.swift /your/project/path/
 ```
 
 ---
 
 ## 📝 总结
 
-这套方案不是简单代码片段，而是经过**两轮深度 QA 排查**、对照 Apple 官方文档验证后的系统性 AI 知识库。
+这套方案不是简单代码片段，而是经过**两轮深度 QA 排查**、对照 Apple 官方文档验证后的系统性解决方案。
 
-如果你的团队正在面临 iOS 26 适配 deadline，把这套 Skill 交给你的 AI，几小时的排查工作可以压缩到几分钟。
+如果你的团队正在面临 iOS 26 适配 deadline，希望这套开源方案能帮你省下几周的踩坑时间。
 
-**相关参考**：
+> ⭐ 有用的话欢迎点 Star，也欢迎提 Issue 和 PR！
+
+**相关链接**：
+- GitHub：[github.com/luodeCoding/ios26-adaptation-skill](https://github.com/luodeCoding/ios26-adaptation-skill)
 - Apple 官方要求：[developer.apple.com/news/upcoming-requirements](https://developer.apple.com/news/upcoming-requirements)

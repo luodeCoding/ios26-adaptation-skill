@@ -1,6 +1,6 @@
 # iOS 26 SDK 适配完整方案：自动化扫描脚本 + 20+ 检测规则 + 代码模板全覆盖
 
-**摘要**：2026 年 4 月 28 日起，Apple 强制要求所有 App Store 提交使用 iOS 26 SDK 构建。本文介绍一套完整的 **AI 适配技能（Skill）**：将你的 AI 助手接入这套知识库后，它能自动扫描你的 iOS 项目、定位废弃 API、输出改造方案，并直接提供 Swift/Objective-C 双语言模板。不需要手动运行任何脚本，AI 替你完成排查和适配。
+**摘要**：2026 年 4 月 28 日起，Apple 强制要求所有 App Store 提交使用 iOS 26 SDK 构建。本文介绍一套完整的 iOS 26 适配开源方案，包含 Python 自动化扫描脚本（20+ 规则）、Swift/Objective-C 双语言模板、两轮 QA 排查沉淀的 15 项关键差距，以及第三方 SDK 兼容性速查表。
 
 <!--
 【图1：封面头图 / 文章头图】
@@ -112,7 +112,7 @@ RULES = [
 ]
 ```
 
-新增规则只需在 Skill 配置中补充一个字典，AI 立即生效。
+新增规则只需补充一个字典，无需修改扫描引擎。
 
 ---
 
@@ -200,7 +200,7 @@ final class MainActorViewModel: ObservableObject {
 
 ## 七、项目信息
 
-- **类型**：AI 适配技能（Skill）/ 知识库
+- **GitHub**：[github.com/luodeCoding/ios26-adaptation-skill](https://github.com/luodeCoding/ios26-adaptation-skill)
 - **语言**：Objective-C / Swift
 - **最低 iOS 版本**：12.0+
 - **许可证**：MIT
@@ -209,18 +209,10 @@ final class MainActorViewModel: ObservableObject {
 
 ## 八、快速开始
 
-```
-1. 将 iOS 26 Adaptation Skill 接入你的 AI 助手
-   （放入 AI 可读取的工作目录或知识库）
-
-2. 向 AI 提出适配需求：
-   "帮我做 iOS 26 适配"
-
-3. AI 自动完成：
-   - 扫描项目代码，定位废弃 API 和架构问题
-   - 根据发版时间推荐 Strategy A/B/C
-   - 生成改造代码（Swift/OC/Mixed）
-   - 提供 Phase 1/2 检查清单
+```bash
+git clone https://github.com/luodeCoding/ios26-adaptation-skill.git
+cd ios26-adaptation-skill
+python3 scripts/ios26-scanner.py /path/to/your/ios/project
 ```
 
 ---
