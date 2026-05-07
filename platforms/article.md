@@ -171,6 +171,19 @@ templates/
 
 ---
 
+## 📦 第三方 SDK 兼容性
+
+| SDK | 问题 | 最低兼容版本 |
+|-----|------|------------|
+| Facebook iOS SDK | StoreKit 1 API 编译失败 | 18.1.0+ |
+| RevenueCat | StoreKit 1 废弃警告 | 5.0.0+ |
+| Firebase Analytics | 缺少 Privacy Manifest | 10.24.0+ |
+| 极光推送 | 通知选项替换逻辑 | 最新版 |
+
+完整列表见项目 `docs/sdk-compatibility.md`。
+
+---
+
 ## 🚀 快速开始
 
 ```bash
