@@ -521,8 +521,28 @@ UIDesignRequiresCompatibility: Boolean = true
 
 **导航系统变化**:
 - 导航栏按钮自动应用液态玻璃效果
+- 多个按钮会被合并到同一个玻璃背景块中
 - 可能与现有自定义布局不协调
 - **建议**: 检查导航栏按钮位置、大小、样式兼容性
+
+**导航栏按钮间距与顺序（iOS 26+）**:
+
+当设置 `hidesSharedBackground = true` 以保持独立按钮背景时，会出现两个问题：
+1. **按钮间距增大** — 系统在每个按钮的私有 `PlatterView` 容器之间注入固定间距，无法通过公开 API 消除
+2. **右侧按钮顺序反转** — 多个 `rightBarButtonItems` 的显示顺序可能与 iOS 25 及以前相反
+
+**适配策略**:
+
+| 位置 | 建议 | 原因 |
+|-----|------|------|
+| **右侧** (`rightBarButtonItems`) | **全局修复** | 多个操作按钮常见，间距和顺序问题明显 |
+| **左侧** (`leftBarButtonItems`) | **默认保持系统样式** | 系统返回按钮在 Liquid Glass 下通常可接受；手动调整可能与返回箭头布局冲突 |
+
+> 💡 **决策提示**: 只有设计团队明确要求时才修复左侧；否则让系统处理返回按钮。
+
+**实现方案**: 使用运行时遍历 `_UINavigationBarPlatterView` 并强制重置间距和顺序。
+- Swift 模板: `templates/swift/UINavigationBar+LiquidGlassAdapter.swift`
+- Objective-C 模板: `templates/objc/UINavigationBar+LiquidGlassAdapter.h/.m`
 
 **键盘系统变化**:
 - 自带毛玻璃折射效果
@@ -985,6 +1005,8 @@ rules:
 #### 11.3.1 视觉适配
 - [ ] 移除 UIDesignRequiresCompatibility 配置
 - [ ] 检查导航栏与系统效果协调性
+- [ ] **右侧导航栏按钮**: 验证 Liquid Glass 下的间距和顺序（如需要，使用 `UINavigationBar+LiquidGlassAdapter`）
+- [ ] **左侧导航栏按钮**: 决定是否应用 PlatterView 修复，或保留系统返回按钮不变
 - [ ] 检查键盘样式变化影响
 - [ ] 检查 TabBar 可读性
 - [ ] 检查滚动视图表现

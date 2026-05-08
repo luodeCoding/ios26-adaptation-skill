@@ -37,6 +37,9 @@
 - [ ] 在不同主题下测试导航栏
 - [ ] 验证返回按钮外观
 - [ ] 检查标题视图位置
+- [ ] **右侧导航栏按钮**: 验证 Liquid Glass 下的间距和顺序（如需要，使用 `UINavigationBar+LiquidGlassAdapter`）
+- [ ] **左侧导航栏按钮**: 决定是否应用 PlatterView 修复，或保留系统返回按钮不变
+- [ ] 测试多个 `rightBarButtonItems` — 确认顺序与 iOS 26 之前一致
 
 ### TabBar
 - [ ] 检查 TabBar 自定义样式

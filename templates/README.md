@@ -13,12 +13,15 @@ templates/
 │   ├── UIApplication+MainWindow.swift       # Unified window/navigation access
 │   ├── SceneDelegate.swift                  # SceneDelegate implementation
 │   ├── AppDelegate+Setup.swift              # AppDelegate refactoring example
-│   └── UNNotificationOptions+Adapter.swift  # Notification options adapter
+│   ├── UNNotificationOptions+Adapter.swift  # Notification options adapter
+│   ├── Swift6ConcurrencyAdapter.swift       # Swift 6 strict concurrency patterns
+│   └── UINavigationBar+LiquidGlassAdapter.swift  # Fixes spacing & order reversal for nav-bar buttons under Liquid Glass (iOS 26+)
 ├── objc/                     # Objective-C templates
 │   ├── UIApplication+MainWindow.h/.m
 │   ├── SceneDelegate.h/.m
 │   ├── AppDelegate+Setup.h/.m
-│   └── UNNotificationOptionsAdapter.h/.m
+│   ├── UNNotificationOptionsAdapter.h/.m
+│   └── UINavigationBar+LiquidGlassAdapter.h/.m
 └── mixed/                    # Mixed Swift/Objective-C projects
     └── README.md                            # Bridging strategies & cross-language guide
 ```

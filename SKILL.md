@@ -671,6 +671,79 @@ Common problems after removing `UIDesignRequiresCompatibility`:
 - **Back-button image replacements looking cropped**  
   → Re-test all custom back-button assets in Light, Dark, and tinted modes.
 
+##### 3a. Navigation Bar Button Spacing & Ordering (iOS 26+)
+
+iOS 26 Liquid Glass merges multiple navigation-bar buttons into a **single shared glass background block**. To keep the pre-iOS 26 appearance (each button has its own independent background), Apple provides `hidesSharedBackground`:
+
+```swift
+// Swift
+if #available(iOS 26.0, *) {
+    item.hidesSharedBackground = true
+}
+```
+
+```objc
+// Objective-C
+if (@available(iOS 26.0, *)) {
+    item.hidesSharedBackground = YES;
+}
+```
+
+However, enabling `hidesSharedBackground` introduces two new issues:
+
+1. **Extra spacing** between buttons — each item gets its own `_UINavigationBarPlatterView` container, and the system injects fixed spacing between them that cannot be removed via public APIs.
+2. **Reversed order for `rightBarButtonItems`** — on iOS 26, when multiple right-side items have `hidesSharedBackground = true`, they may render in the reverse order compared to iOS 25 and earlier.
+
+**Recommended Strategy**
+
+| Side | Recommendation | Reason |
+|------|---------------|--------|
+| **Right** (`rightBarButtonItems`) | **Apply fix globally** | Multiple action buttons are common; spacing and order issues are visually obvious and break muscle memory. |
+| **Left** (`leftBarButtonItems`) | **Leave as-is by default** | The system back button usually looks acceptable under Liquid Glass. Manual PlatterView adjustments can conflict with the back-button chevron layout. |
+
+> 💡 **Decision tip**: Only apply the left-side fix if your design team explicitly asks for it or if you use custom left buttons (not the system back button). Otherwise, let the system handle the back button.
+
+**Implementation**
+
+Use the runtime PlatterView fix to eliminate spacing and restore correct order:
+
+- Swift: `templates/swift/UINavigationBar+LiquidGlassAdapter.swift`
+- Objective-C: `templates/objc/UINavigationBar+LiquidGlassAdapter.h/.m`
+
+**Usage example**:
+
+```swift
+// Swift — apply to a specific navigation controller
+let nav = UINavigationController(rootViewController: rootVC)
+nav.applyLiquidGlassRightButtonFix()   // right items only (recommended)
+// nav.applyLiquidGlassAllButtonFix()  // both sides (use only if needed)
+```
+
+```objc
+// Objective-C — apply to a specific navigation controller
+UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:rootVC];
+[nav lg_applyLiquidGlassRightButtonFix];   // right items only (recommended)
+// [nav lg_applyLiquidGlassAllButtonFix];  // both sides (use only if needed)
+```
+
+**How the fix works**:
+
+1. Swizzles `layoutSubviews` on `UINavigationBar`.
+2. After the system lays out all buttons, recursively collects all private `_UINavigationBarPlatterView` containers by class-name string matching.
+3. Splits PlatterViews into left and right groups by their center-X relative to the navigation bar midpoint.
+4. **Right side**: sorts by original x-coordinate descending (rightmost first), then repositions each PlatterView from the right edge inward with zero spacing. This simultaneously fixes both the spacing gap and the reversed-order issue.
+5. **Left side** (optional): sorts ascending and packs from `safeAreaInsets.left` toward the center.
+6. Updates `NSLayoutConstraint.Leading` constants first, then falls back to direct `frame` assignment.
+
+**Important considerations**:
+
+| Consideration | Details |
+|---------------|---------|
+| Safe Area | Left-side start offset uses `safeAreaInsets.left` to respect Dynamic Island / notch. Right side reserves a 5-pt edge margin. |
+| Private class risk | Relies on string matching `"PlatterView"`. If Apple renames the class, update the match string. |
+| Constraint conflicts | Only `Leading` constraints are adjusted. If PlatterViews also have `Trailing` / `CenterX` constraints, additional handling may be needed. |
+| Scope | The swizzle is global per process. Call `applyRightBarButtonItemsFix()` on every `UINavigationBar` instance you want to fix, or subclass `UINavigationController` to apply it automatically. |
+
 #### 4. Fix Keyboard & Input Issues
 
 - Verify every text field still sits in the correct position when the keyboard appears.
@@ -1161,6 +1234,7 @@ Benefits of PHPicker:
 - [Code Templates](../templates/) — Production-ready Swift and Objective-C templates (copy to your project and modify)
   - `PrivacyInfo.xcprivacy` — Privacy Manifest template for App Store submission
   - `Swift6ConcurrencyAdapter.swift` — Swift 6 strict concurrency migration patterns
+  - `UINavigationBar+LiquidGlassAdapter` — Fixes spacing & order reversal for nav-bar buttons under Liquid Glass
 - [FAQ](../docs/faq.md) — Common questions about deadlines, build errors, and Liquid Glass
 - [Testing Guide](../docs/testing-guide.md) — Complete testing framework for QA teams
 - [SDK Compatibility Cheat Sheet](../docs/sdk-compatibility.md) — Third-party SDK iOS 26 compatibility status

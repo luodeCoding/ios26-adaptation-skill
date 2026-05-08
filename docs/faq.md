@@ -235,6 +235,19 @@ Liquid Glass causes the system to **auto-insert `UIDropShadowView`** behind navi
 - Use `UINavigationBar.standardAppearance` / `scrollEdgeAppearance` for customization instead of manual subview manipulation
 - If you must traverse subviews, filter by class type rather than index
 
+### Q25: Multiple right navigation bar buttons look wrong on iOS 26
+
+iOS 26 Liquid Glass merges multiple navigation-bar buttons into a shared glass background. To restore independent backgrounds, set `hidesSharedBackground = true` on each `UIBarButtonItem`.
+
+However, this causes two side effects:
+1. **Extra spacing** appears between buttons (system injects fixed spacing between private `PlatterView` containers).
+2. **Order reversal** — `rightBarButtonItems` may render in reverse order compared to earlier iOS versions.
+
+**Fix**:
+- Use the `UINavigationBar+LiquidGlassAdapter` template (Swift or Objective-C). It swizzles `layoutSubviews`, finds all `PlatterView` containers at runtime, and repositions them with zero spacing while restoring the correct visual order.
+- **Recommended**: apply the fix to **right-side items only** (`applyRightBarButtonItemsFix`). The system back button on the left usually looks fine; only apply left-side fixes if your design team explicitly requires it.
+- Call `navController.applyLiquidGlassRightButtonFix()` (Swift) or `[navController lg_applyLiquidGlassRightButtonFix]` (Objective-C) after creating your navigation controller.
+
 ### Q25: Custom background colors look wrong with Liquid Glass
 
 Liquid Glass uses **refraction layers** that expect translucency. Custom solid `backgroundColor` on `UINavigationBar`, `UITabBar`, or `UIToolbar` creates visual seams.

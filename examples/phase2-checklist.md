@@ -37,6 +37,9 @@
 - [ ] Tested navigation bar in different themes
 - [ ] Verified back button appearance
 - [ ] Checked title view positioning
+- [ ] **Right bar button items**: verified spacing and ordering under Liquid Glass (use `UINavigationBar+LiquidGlassAdapter` if needed)
+- [ ] **Left bar button items**: decided whether to apply PlatterView fix or leave system back button as-is
+- [ ] Tested multiple `rightBarButtonItems` — confirmed order matches pre-iOS 26 expectation
 
 ### TabBar
 - [ ] Reviewed TabBar custom styling

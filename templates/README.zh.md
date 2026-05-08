@@ -10,12 +10,15 @@ templates/
 │   ├── UIApplication+MainWindow.swift       # 统一窗口/导航访问
 │   ├── SceneDelegate.swift                  # 完整 SceneDelegate 实现
 │   ├── AppDelegate+Setup.swift              # AppDelegate 改造示例
-│   └── UNNotificationOptions+Adapter.swift  # 通知选项适配器
+│   ├── UNNotificationOptions+Adapter.swift  # 通知选项适配器
+│   ├── Swift6ConcurrencyAdapter.swift       # Swift 6 严格并发迁移模式
+│   └── UINavigationBar+LiquidGlassAdapter.swift  # 修复 Liquid Glass 下导航栏按钮间距和顺序反转问题 (iOS 26+)
 ├── objc/                     # Objective-C 模板
 │   ├── UIApplication+MainWindow.h/.m
 │   ├── SceneDelegate.h/.m
 │   ├── AppDelegate+Setup.h/.m
-│   └── UNNotificationOptionsAdapter.h/.m
+│   ├── UNNotificationOptionsAdapter.h/.m
+│   └── UINavigationBar+LiquidGlassAdapter.h/.m
 └── mixed/                    # Swift/Objective-C 混合项目
     └── README.md                            # 桥接策略与跨语言调用指南
 ```
