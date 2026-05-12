@@ -4,6 +4,22 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)。
 
+## [Unreleased]
+
+## [1.6.0] - 2026-05-12
+
+### 新增
+- **Keyboard Liquid Glass 工具栏适配器**: `templates/swift/UITextInput+LiquidGlassAdapter.swift` 和 `templates/objc/UITextInput+LiquidGlassAdapter.h/.m`
+  - 可选的 `lg_clearLiquidGlassAccessoryIfNeeded()` 扩展，用于 `UITextField` / `UITextView`
+  - 在 iOS 26+ 上清除默认的 `inputAccessoryView`，当玻璃拟态键盘工具栏在视觉上具有干扰性时
+  - 在 SKILL.md 第二阶段中记录了按控件 / 子类 / 全局扫描的策略表
+- **键盘适配扫描规则**:
+  - `KEYBOARD-001` — 检测自定义 `UITextField` 子类
+  - `KEYBOARD-002` — 检测自定义 `UITextView` 子类
+  - `KEYBOARD-003` — 检测 `inputAccessoryView` 赋值
+- **AGENTS.md 更新**: 在标准工作流中增加了 `inputAccessoryView`、自定义文本输入扫描；在必查项中增加了自定义文本输入检查
+- **第二阶段检查清单** (中英文): 增加了 Liquid Glass 工具栏决策和自定义文本输入扫描项
+
 ## [1.5.0] - 2026-05-06
 
 ### 新增

@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-05-12
+
 ### Added
 - **Keyboard Liquid Glass toolbar adapter**: `templates/swift/UITextInput+LiquidGlassAdapter.swift` and `templates/objc/UITextInput+LiquidGlassAdapter.h/.m`
   - Optional `lg_clearLiquidGlassAccessoryIfNeeded()` extension for `UITextField` / `UITextView`

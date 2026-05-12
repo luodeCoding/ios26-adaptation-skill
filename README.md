@@ -9,8 +9,8 @@
 > **Languages**: Objective-C / Swift  
 > **Platform**: iOS  
 > **Minimum iOS Version**: 12.0+  
-> **Last Updated**: 2026-05-06  
-> **Version**: [v1.5.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
+> **Last Updated**: 2026-05-12  
+> **Version**: [v1.6.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
 
 **This repository is an AI adaptation skill tool. It does not participate in any project compilation.**
 
@@ -37,6 +37,7 @@ This repository is a **standalone skill knowledge base** for:
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **[v1.6.0](CHANGELOG.md)** | 2026-05-12 | Liquid Glass keyboard toolbar adapter, keyboard scanner rules, Phase 2 checklist updates |
 | **[v1.5.0](CHANGELOG.md)** | 2026-05-06 | Privacy Manifest template, Swift 6 adapter, SDK compatibility sheet, unit tests, CI |
 | **[v1.4.0](CHANGELOG.md)** | 2026-05-06 | StoreKit 2, SiriKit→App Intents, SwiftUI modern APIs, Photos, Privacy Manifest scanner rules |
 | **[v1.3.0](CHANGELOG.md)** | 2026-05-06 | Swift 6 concurrency, TLS 1.2, CoreData keys, Liquid Glass structural impacts, scanner rules |

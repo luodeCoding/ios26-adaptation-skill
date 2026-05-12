@@ -9,8 +9,8 @@
 > **语言**: Objective-C / Swift  
 > **平台**: iOS  
 > **最低 iOS 版本**: 12.0+  
-> **最后更新**: 2026-05-06  
-> **版本**: [v1.5.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.zh.md)
+> **最后更新**: 2026-05-12  
+> **版本**: [v1.6.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.zh.md)
 
 **本仓库是 AI 适配技能工具，不参与任何项目编译。**
 
@@ -37,6 +37,7 @@
 
 | 版本 | 日期 | 主要更新 |
 |------|------|---------|
+| **[v1.6.0](CHANGELOG.zh.md)** | 2026-05-12 | Liquid Glass 键盘工具栏适配器、键盘扫描规则、第二阶段检查清单更新 |
 | **[v1.5.0](CHANGELOG.zh.md)** | 2026-05-06 | Privacy Manifest 模板、Swift 6 并发适配模板、第三方 SDK 兼容性速查表、单元测试、CI |
 | **[v1.4.0](CHANGELOG.zh.md)** | 2026-05-06 | StoreKit 2、SiriKit→App Intents、SwiftUI 现代 API、Photos 扫描规则 |
 | **[v1.3.0](CHANGELOG.zh.md)** | 2026-05-06 | Swift 6 并发、TLS 1.2、CoreData、Liquid Glass 结构影响扫描规则 |
