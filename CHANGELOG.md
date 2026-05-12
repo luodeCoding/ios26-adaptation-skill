@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **Keyboard Liquid Glass toolbar adapter**: `templates/swift/UITextInput+LiquidGlassAdapter.swift` and `templates/objc/UITextInput+LiquidGlassAdapter.h/.m`
+  - Optional `lg_clearLiquidGlassAccessoryIfNeeded()` extension for `UITextField` / `UITextView`
+  - Clears default `inputAccessoryView` on iOS 26+ when the glassmorphism keyboard toolbar is visually disruptive
+  - Documented in SKILL.md Phase 2 with per-control / subclass / global sweep strategy table
+- **Scanner rules** for keyboard adaptation:
+  - `KEYBOARD-001` — detects custom `UITextField` subclasses
+  - `KEYBOARD-002` — detects custom `UITextView` subclasses
+  - `KEYBOARD-003` — detects `inputAccessoryView` assignments
+- **AGENTS.md updates**: added `inputAccessoryView`, custom text input scanning to Standard Workflow; added custom text input check to Must-Check Items
+- **Phase 2 checklists** (EN/ZH): added Liquid Glass toolbar decision and custom text input scan items
+
 ## [1.5.0] - 2026-05-06
 
 ### Added

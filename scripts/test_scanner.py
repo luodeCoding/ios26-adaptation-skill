@@ -178,6 +178,43 @@ class TestScannerRules(unittest.TestCase):
         f.unlink()
         self.assertEqual(len(issues), 1)
 
+    # --- Keyboard Rules (new in unreleased) ---
+
+    def test_keyboard_001_custom_textfield_swift(self):
+        f = self._make_file("class MyTextField: UITextField {}")
+        issues = scan_file(f, [
+            r for r in __import__("ios26_scanner").RULES if r["id"] == "KEYBOARD-001"
+        ])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "info")
+
+    def test_keyboard_001_custom_textfield_oc(self):
+        f = self._make_file("@interface MyTextField : UITextField\n@end", ".h")
+        issues = scan_file(f, [
+            r for r in __import__("ios26_scanner").RULES if r["id"] == "KEYBOARD-001"
+        ])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+
+    def test_keyboard_002_custom_textview_swift(self):
+        f = self._make_file("class MyTextView: UITextView {}")
+        issues = scan_file(f, [
+            r for r in __import__("ios26_scanner").RULES if r["id"] == "KEYBOARD-002"
+        ])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "info")
+
+    def test_keyboard_003_input_accessory_view(self):
+        f = self._make_file("textField.inputAccessoryView = myToolbar")
+        issues = scan_file(f, [
+            r for r in __import__("ios26_scanner").RULES if r["id"] == "KEYBOARD-003"
+        ])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "info")
+
     # --- False Positive Tests ---
 
     def test_notif_002_removed_no_longer_flags(self):

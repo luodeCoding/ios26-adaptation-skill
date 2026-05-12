@@ -36,7 +36,8 @@ When assisting with iOS 26 adaptation, **always follow this flow**:
 2. Scan Project
    ├── Use scripts/ios26-scanner.py (if available in user's project)
    └── Or grep for: keyWindow, delegate.window, UNNotificationPresentationOptionAlert,
-       UIApplicationSceneManifest, statusBarStyle
+       UIApplicationSceneManifest, statusBarStyle, inputAccessoryView,
+       subclass UITextField, subclass UITextView
 
 3. Determine Strategy (A / B / C)
    ├── Strategy A: Release before 2026-04-28 → branch-based adaptation
@@ -77,6 +78,7 @@ When assisting with iOS 26 adaptation, **always follow this flow**:
 - [ ] Is `UIApplicationSceneManifest` present in `Info.plist`?
 - [ ] How many occurrences of `keyWindow` / `delegate.window` exist?
 - [ ] Are there notification-related deprecated enums?
+- [ ] Any custom `UITextField` / `UITextView` subclasses? (Liquid Glass keyboard toolbar may need `inputAccessoryView` clearing)
 - [ ] What is the app's **minimum iOS version**? (This determines iOS 12 fallback path necessity.)
 - [ ] What is the **next release date**? (This determines strategy A/B/C.)
 
@@ -89,10 +91,12 @@ When user needs copy-pasteable code, point them to the `templates/` directory:
 - `templates/swift/AppDelegate+Setup.swift`
 - `templates/swift/UNNotificationOptions+Adapter.swift`
 - `templates/swift/Swift6ConcurrencyAdapter.swift` — Swift 6 strict concurrency patterns
+- `templates/swift/UITextInput+LiquidGlassAdapter.swift` — Optional keyboard toolbar glass effect remover (iOS 26+)
 - `templates/objc/UIApplication+MainWindow.h/.m`
 - `templates/objc/SceneDelegate.h/.m`
 - `templates/objc/AppDelegate+Setup.h/.m`
 - `templates/objc/UNNotificationOptionsAdapter.h/.m`
+- `templates/objc/UITextInput+LiquidGlassAdapter.h/.m` — Optional keyboard toolbar glass effect remover (iOS 26+)
 - `templates/mixed/README.md` — bridging patterns for mixed Swift/Objective-C projects
 - `templates/PrivacyInfo.xcprivacy` — Privacy Manifest template for App Store submission
 

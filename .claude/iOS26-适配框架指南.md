@@ -547,7 +547,12 @@ UIDesignRequiresCompatibility: Boolean = true
 **键盘系统变化**:
 - 自带毛玻璃折射效果
 - 自带圆角和阴影
-- **建议**: 检查键盘附件视图、输入框位置
+- **键盘工具栏液态效果**: iOS 26 会为键盘默认的 `inputAccessoryView`（键盘上方的工具栏）应用液态玻璃效果。如果测试反馈该效果不美观或与 UI 冲突，可选择性清除
+- **建议**: 
+  - 检查键盘附件视图、输入框位置
+  - 扫描项目中所有自定义 `UITextField` / `UITextView` 子类，优先处理这些控件的键盘工具栏效果
+  - 可选方案：`if #available(iOS 26.0, *) { tf.inputAccessoryView = UIView() }`
+  - 模板：`templates/swift/UITextInput+LiquidGlassAdapter.swift` / `templates/objc/UITextInput+LiquidGlassAdapter.h/.m`
 
 **TabBar 系统变化**:
 - 半透明毛玻璃效果增强
@@ -660,6 +665,7 @@ UIDesignRequiresCompatibility: Boolean = true
 | Liquid Glass 启用 | 移除配置后系统控件有新效果 | iOS 26 设备视觉检查 |
 | 导航栏协调 | 自定义导航与系统效果协调 | 各页面导航栏检查 |
 | 键盘适配 | 键盘样式变化后输入正常 | 各输入框测试 |
+| 键盘工具栏 | 液态玻璃工具栏是否影响视觉（可选处理） | 自定义 UITextField/UITextView 子类检查 |
 | TabBar 可读 | TabBar 文字/图标清晰可读 | 各 Tab 页面检查 |
 | 滚动视图 | 滚动时无异常视觉问题 | 长列表页面测试 |
 
@@ -886,6 +892,8 @@ rules:
 ### Liquid Glass 影响检查
 - [ ] 导航栏样式与系统效果协调
 - [ ] 键盘样式变化后输入正常
+- [ ] **键盘工具栏**: 决定是否清除 `inputAccessoryView`（可选 — 仅在测试反馈玻璃效果不美观时处理）
+- [ ] **自定义文本输入**: 扫描自定义 `UITextField` / `UITextView` 子类，按需应用 `lg_clearLiquidGlassAccessoryIfNeeded()`
 - [ ] TabBar 文字/图标清晰可读
 - [ ] 滚动视图无异常视觉问题
 
@@ -893,7 +901,7 @@ rules:
 | 检查项 | 状态 | 备注 |
 |-------|------|------|
 | 自定义导航栏样式 | ... | ... |
-| 键盘附件视图 | ... | ... |
+| 键盘附件视图（液态玻璃） | ... | 可选：iOS 26+ 清除默认工具栏 |
 | TabBar 自定义样式 | ... | ... |
 
 ### Info.plist 配置（第二阶段）
@@ -1008,12 +1016,15 @@ rules:
 - [ ] **右侧导航栏按钮**: 验证 Liquid Glass 下的间距和顺序（如需要，使用 `UINavigationBar+LiquidGlassAdapter`）
 - [ ] **左侧导航栏按钮**: 决定是否应用 PlatterView 修复，或保留系统返回按钮不变
 - [ ] 检查键盘样式变化影响
+- [ ] **液态玻璃键盘工具栏**: 决定是否在 iOS 26+ 上清除 `inputAccessoryView`（可选 — 仅在测试反馈玻璃效果不美观时处理）
+- [ ] **自定义文本输入**: 扫描自定义 `UITextField` / `UITextView` 子类，按需应用适配
 - [ ] 检查 TabBar 可读性
 - [ ] 检查滚动视图表现
 
 #### 11.3.2 UI 回归测试
 - [ ] 所有页面导航栏显示正常
 - [ ] 所有输入框键盘交互正常
+- [ ] 键盘液态玻璃工具栏视觉检查（如已清除 `inputAccessoryView`）
 - [ ] TabBar 各页面切换正常
 - [ ] 长列表滚动流畅
 - [ ] 模态弹窗显示正常

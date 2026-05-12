@@ -746,6 +746,47 @@ UINavigationController *nav = [[UINavigationController alloc] initWithRootViewCo
 
 #### 4. Fix Keyboard & Input Issues
 
+##### 4a. Liquid Glass Keyboard Toolbar (Optional)
+
+iOS 26 applies a glassmorphism effect to the keyboard's default **input accessory view** (the toolbar above the keyboard). Many teams report this looks visually disruptive — especially when the glass toolbar clashes with custom UI or the app's design system.
+
+**When to adjust**: Only if your testers/designers explicitly complain about the glass toolbar appearance.
+
+**Solution**: Clear the default `inputAccessoryView` on iOS 26+:
+
+```swift
+// Swift — per text field
+textField.inputAccessoryView = UIView()
+
+// Or use the adapter extension
+if #available(iOS 26.0, *) {
+    textField.inputAccessoryView = UIView()
+}
+```
+
+```objc
+// Objective-C
+if (@available(iOS 26.0, *)) {
+    textField.inputAccessoryView = [[UIView alloc] init];
+}
+```
+
+**Recommended approach**:
+
+| Approach | When to use | Pros | Cons |
+|----------|-------------|------|------|
+| **Per-control** (recommended) | Apply only to text inputs where the glass effect is problematic | Surgical, minimal side effects | Requires identifying each affected field |
+| **Custom subclass** | Your app has many custom `UITextField` / `UITextView` subclasses | One-line in `awakeFromNib` / `init` | Does not cover system text inputs |
+| **Global sweep** | Quick fix for all text inputs in the app | Fastest to implement | May remove legitimate custom toolbars (Done/Next buttons) — **discouraged** |
+
+**Scan priority**: Search the project for custom `UITextField` / `UITextView` subclasses first, then check standalone `inputAccessoryView` assignments.
+
+**Production templates**:
+- Swift: `templates/swift/UITextInput+LiquidGlassAdapter.swift`
+- Objective-C: `templates/objc/UITextInput+LiquidGlassAdapter.h/.m`
+
+##### 4b. General Keyboard Verification
+
 - Verify every text field still sits in the correct position when the keyboard appears.
 - Check input accessory views: their background may now sit on top of a glass keyboard. Consider using `UIInputView` with a system background or adding subtle padding.
 - Re-test secure text entry fields; their visual treatment may have changed.
@@ -929,6 +970,14 @@ UINavigationController *nav = [[UINavigationController alloc] initWithRootViewCo
 | Rule ID | Pattern | Severity |
 |---------|---------|----------|
 | PHOTOS-001 | `UIImagePickerController` | Warning |
+
+### Keyboard Patterns (Liquid Glass)
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| KEYBOARD-001 | Custom `UITextField` subclass | Info |
+| KEYBOARD-002 | Custom `UITextView` subclass | Info |
+| KEYBOARD-003 | `inputAccessoryView` assignment | Info |
 
 ---
 

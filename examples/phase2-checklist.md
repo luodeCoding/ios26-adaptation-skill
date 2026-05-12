@@ -55,6 +55,8 @@
 - [ ] Checked input field positioning with keyboard
 - [ ] Verified secure text entry fields
 - [ ] Tested custom input views
+- [ ] **Liquid Glass toolbar**: decided whether to clear `inputAccessoryView` on iOS 26+ (optional — only if testers report the glass effect is disruptive)
+- [ ] **Custom text inputs**: scanned for custom `UITextField` / `UITextView` subclasses and applied `lg_clearLiquidGlassAccessoryIfNeeded()` where needed
 
 ### System Controls
 - [ ] Checked all UIButton instances

@@ -222,6 +222,30 @@ RULES = [
         "severity": "warning",
         "suggestion": "Use PHPickerViewController (PhotosUI, iOS 14+) for photo selection",
     },
+    {
+        "id": "KEYBOARD-001",
+        "name": "Custom UITextField subclass detected",
+        "pattern": re.compile(r"class\s+\w+\s*:\s*UITextField|@interface\s+\w+\s*:\s*UITextField"),
+        "extensions": {".swift", ".m", ".mm", ".h"},
+        "severity": "info",
+        "suggestion": "Review for Liquid Glass keyboard toolbar effect. If the glass inputAccessoryView looks disruptive, set inputAccessoryView = UIView() on iOS 26+ (see templates/swift/UITextInput+LiquidGlassAdapter)",
+    },
+    {
+        "id": "KEYBOARD-002",
+        "name": "Custom UITextView subclass detected",
+        "pattern": re.compile(r"class\s+\w+\s*:\s*UITextView|@interface\s+\w+\s*:\s*UITextView"),
+        "extensions": {".swift", ".m", ".mm", ".h"},
+        "severity": "info",
+        "suggestion": "Review for Liquid Glass keyboard toolbar effect. If the glass inputAccessoryView looks disruptive, set inputAccessoryView = UIView() on iOS 26+ (see templates/swift/UITextInput+LiquidGlassAdapter)",
+    },
+    {
+        "id": "KEYBOARD-003",
+        "name": "inputAccessoryView assignment found",
+        "pattern": re.compile(r"inputAccessoryView\s*="),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "info",
+        "suggestion": "Verify Liquid Glass compatibility: if this is a custom toolbar, ensure it renders correctly over the glass keyboard. If it's clearing the default accessory view, confirm iOS 26+ guard is present.",
+    },
 ]
 
 DEFAULT_EXCLUDES = {

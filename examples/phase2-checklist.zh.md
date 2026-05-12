@@ -55,6 +55,8 @@
 - [ ] 检查键盘弹出时输入框位置
 - [ ] 验证安全文本输入框
 - [ ] 测试自定义输入视图
+- [ ] **液态玻璃工具栏**: 决定是否在 iOS 26+ 上清除 `inputAccessoryView`（可选 — 仅在测试反馈玻璃效果不美观时处理）
+- [ ] **自定义文本输入**: 扫描自定义 `UITextField` / `UITextView` 子类，在需要的位置应用 `lg_clearLiquidGlassAccessoryIfNeeded()`
 
 ### 系统控件
 - [ ] 检查所有 UIButton 实例
