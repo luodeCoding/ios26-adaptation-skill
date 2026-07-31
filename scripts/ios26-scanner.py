@@ -93,6 +93,22 @@ RULES = [
         "suggestion": "Use UIApplication.shared.visibleViewController",
     },
     {
+        "id": "WINDOW-007",
+        "name": "Deprecated UIApplication.shared.windows usage (Swift)",
+        "pattern": re.compile(r"UIApplication\.shared\.windows"),
+        "extensions": {".swift"},
+        "severity": "warning",
+        "suggestion": "Deprecated since iOS 15. Enumerate connectedScenes and use UIWindowScene.windows instead",
+    },
+    {
+        "id": "WINDOW-008",
+        "name": "Deprecated UIApplication windows usage (Objective-C)",
+        "pattern": re.compile(r"\[UIApplication\s+sharedApplication\]\s*\.windows"),
+        "extensions": {".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "Deprecated since iOS 15. Enumerate connectedScenes and use UIWindowScene.windows instead",
+    },
+    {
         "id": "NOTIF-001",
         "name": "Deprecated UNNotificationPresentationOptionAlert",
         "pattern": re.compile(r"UNNotificationPresentationOptionAlert"),
@@ -175,6 +191,14 @@ RULES = [
         "suggestion": "Implement preferredStatusBarStyle in ViewController instead",
     },
     {
+        "id": "STATUS-004",
+        "name": "Deprecated statusBarFrame access",
+        "pattern": re.compile(r"statusBarFrame"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "Use UIWindowScene.statusBarManager.statusBarFrame (iOS 13+) instead of UIApplication statusBarFrame",
+    },
+    {
         "id": "STOREKIT-001",
         "name": "StoreKit 1 API usage (removed in Xcode 26)",
         "pattern": re.compile(r"SKPaymentTransaction|SKProductsRequest|SKProductsRequestDelegate|SKPaymentQueue|SKPaymentTransactionObserver"),
@@ -223,6 +247,30 @@ RULES = [
         "suggestion": "Use PHPickerViewController (PhotosUI, iOS 14+) for photo selection",
     },
     {
+        "id": "ASSETSLIBRARY-001",
+        "name": "Removed AssetsLibrary import (Swift)",
+        "pattern": re.compile(r"import AssetsLibrary"),
+        "extensions": {".swift"},
+        "severity": "error",
+        "suggestion": "Remove AssetsLibrary import. ALAssetsLibrary is obsoleted in iOS 26. Use PHPhotoLibrary from Photos framework.",
+    },
+    {
+        "id": "ASSETSLIBRARY-002",
+        "name": "Removed AssetsLibrary import (Objective-C)",
+        "pattern": re.compile(r"#import\s+<AssetsLibrary/AssetsLibrary\.h>|@import AssetsLibrary"),
+        "extensions": {".m", ".mm", ".h"},
+        "severity": "error",
+        "suggestion": "Remove AssetsLibrary import. ALAssetsLibrary is obsoleted in iOS 26. Use PHPhotoLibrary from Photos framework.",
+    },
+    {
+        "id": "ASSETSLIBRARY-003",
+        "name": "Removed ALAssetsLibrary usage",
+        "pattern": re.compile(r"ALAssetsLibrary"),
+        "extensions": {".swift", ".m", ".mm", ".h"},
+        "severity": "error",
+        "suggestion": "ALAssetsLibrary is obsoleted in iOS 26. Use PHPhotoLibrary from Photos framework.",
+    },
+    {
         "id": "KEYBOARD-001",
         "name": "Custom UITextField subclass detected",
         "pattern": re.compile(r"class\s+\w+\s*:\s*UITextField|@interface\s+\w+\s*:\s*UITextField"),
@@ -245,6 +293,54 @@ RULES = [
         "extensions": {".swift", ".m", ".mm"},
         "severity": "info",
         "suggestion": "Verify Liquid Glass compatibility: if this is a custom toolbar, ensure it renders correctly over the glass keyboard. If it's clearing the default accessory view, confirm iOS 26+ guard is present.",
+    },
+    {
+        "id": "TABBAR-001",
+        "name": "Private KVC override of tabBar (crashes on iOS 26)",
+        "pattern": re.compile(r"forKey:\s*@?\s*\"tabBar\""),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "error",
+        "suggestion": "iOS 26 adds runtime protection for the tabBar property: setValue:forKey:@\"tabBar\" crashes or produces an extra tab. Use UITabBarAppearance for styling, or a custom container controller for a fully custom tab bar.",
+    },
+    {
+        "id": "NAVBAR-001",
+        "name": "Direct addSubview on UINavigationBar",
+        "pattern": re.compile(r"navigationBar\s+addSubview|navigationBar\.addSubview"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "iOS 26's new navigation bar compositing layer swallows subviews added directly to navigationBar (they disappear after push/pop). Add the view to navigationController.view or use navigationItem.titleView instead.",
+    },
+    {
+        "id": "BARBUTTON-001",
+        "name": "rightBarButtonItems array assignment",
+        "pattern": re.compile(r"rightBarButtonItems\s*="),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "info",
+        "suggestion": "iOS 26 reverses the display order of rightBarButtonItems compared to earlier versions. Verify the order visually and branch with #available(iOS 26, *) if needed.",
+    },
+    {
+        "id": "OPENURL-001",
+        "name": "canOpenURL usage (deprecated in iOS 27)",
+        "pattern": re.compile(r"canOpenURL"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "info",
+        "suggestion": "Deprecated at iOS 27. Migrate to attempt-and-handle: open(_:options:completionHandler:) is not constrained by LSApplicationQueriesSchemes. For presence checks use the universalLinksOnly open option.",
+    },
+    {
+        "id": "ODR-001",
+        "name": "On Demand Resources usage (deprecated in iOS 27)",
+        "pattern": re.compile(r"NSBundleResourceRequest"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "NSBundleResourceRequest / On Demand Resources are deprecated in iOS 27. Plan migration to the Background Assets framework.",
+    },
+    {
+        "id": "METRICKIT-001",
+        "name": "MXMetricManager usage (replaced in iOS 27)",
+        "pattern": re.compile(r"MXMetricManager"),
+        "extensions": {".swift", ".m", ".mm"},
+        "severity": "warning",
+        "suggestion": "MetricKit is restructured in iOS 27: MXMetricManager is replaced by MetricManager (async sequences, Codable + Sendable reports). Plan migration when adopting the iOS 27 SDK.",
     },
 ]
 
@@ -284,10 +380,17 @@ def _should_skip_issue(rule_id: str, line: str, filepath: Path) -> bool:
     # Skip comment-only lines for window-related rules
     if rule_id in ("WINDOW-003", "WINDOW-004") and _is_comment_line(line):
         return True
-    # UIApplication+Extension files legitimately access delegate.window as iOS 12 fallback
-    if rule_id == "WINDOW-003" and "UIApplication+Extension" in str(filepath):
+    # Skip comment-only lines for iOS 26/27 behavior rules (often referenced in notes)
+    if rule_id in ("TABBAR-001", "NAVBAR-001", "BARBUTTON-001", "OPENURL-001") and _is_comment_line(line):
+        return True
+    # UIApplication+Extension / UIApplication+MainWindow files legitimately access
+    # delegate.window as iOS 12 fallback
+    if rule_id == "WINDOW-003" and ("UIApplication+Extension" in str(filepath) or "UIApplication+MainWindow" in str(filepath)):
         if "self.delegate.window" in line or ("delegate.window" in line and "return" in line):
             return True
+    # statusBarManager.statusBarFrame is the modern replacement — do not flag it
+    if rule_id == "STATUS-004" and "statusBarManager" in line:
+        return True
     # UIScreen.main in iOS 12 fallback path is legitimate but should be annotated
     if rule_id in ("SCREEN-001", "SCREEN-002") and ("iOS 12" in line or "fallback" in line.lower() or "deprecated" in line.lower()):
         return True
@@ -295,6 +398,10 @@ def _should_skip_issue(rule_id: str, line: str, filepath: Path) -> bool:
     if rule_id in ("SCREEN-001", "SCREEN-002") and "AppDelegate" in str(filepath):
         if "iOS 12" in line or "fallback" in line.lower():
             return True
+    # UIScreen.main used inside a SceneDelegate-unaffected local pod or vendor library
+    # is a known limitation; these should be updated in their upstream repos
+    if rule_id in ("SCREEN-001", "SCREEN-002") and any(x in str(filepath) for x in ["Pods/", "Vender/", "vendor/", "ThirdParty/"]):
+        return True
     return False
 
 
@@ -330,11 +437,65 @@ def scan_file(filepath: Path, rules: List[dict]) -> List[ScanIssue]:
     return issues
 
 
+def detect_project_type(project_path: Path) -> dict:
+    """Detect if project is Swift-only, mixed, or Objective-C only. Also detect deployment target."""
+    swift_count = 0
+    objc_count = 0
+    deployment_target = None
+
+    for filepath in project_path.rglob("*"):
+        if should_exclude(filepath, []):
+            continue
+        if not filepath.is_file():
+            continue
+        if filepath.suffix == ".swift":
+            swift_count += 1
+        elif filepath.suffix in {".m", ".mm"}:
+            objc_count += 1
+
+    # Try to detect deployment target from Podfile or project files
+    for podfile in project_path.rglob("Podfile"):
+        if should_exclude(podfile, []):
+            continue
+        try:
+            content = podfile.read_text(encoding="utf-8", errors="ignore")
+            match = re.search(r"platform\s+:ios,\s*['\"](\d+(?:\.\d+)?)['\"]", content)
+            if match:
+                deployment_target = float(match.group(1))
+                break
+        except Exception:
+            pass
+
+    # Fallback: parse IPHONEOS_DEPLOYMENT_TARGET from .pbxproj (use the lowest value found)
+    if deployment_target is None:
+        for pbxproj in project_path.rglob("*.pbxproj"):
+            if should_exclude(pbxproj, []):
+                continue
+            try:
+                content = pbxproj.read_text(encoding="utf-8", errors="ignore")
+                targets = [float(m) for m in re.findall(r"IPHONEOS_DEPLOYMENT_TARGET\s*=\s*(\d+(?:\.\d+)?)", content)]
+                if targets:
+                    deployment_target = min(targets)
+                    break
+            except Exception:
+                pass
+
+    return {
+        "is_swift_only": swift_count > 0 and objc_count == 0,
+        "is_mixed": swift_count > 0 and objc_count > 0,
+        "is_objc_only": swift_count == 0 and objc_count > 0,
+        "swift_files": swift_count,
+        "objc_files": objc_count,
+        "deployment_target": deployment_target,
+    }
+
+
 def check_architecture(project_path: Path) -> dict:
     """Check for SceneDelegate, sharedInstance, and Info.plist configuration."""
     has_scenedelegate = False
     has_shared_instance = False
     has_scene_manifest = False
+    has_compatibility_flag = False
 
     # Look for SceneDelegate files
     for candidate in project_path.rglob("SceneDelegate.*"):
@@ -353,7 +514,7 @@ def check_architecture(project_path: Path) -> dict:
                 pass
             break
 
-    # Look for Info.plist with UIApplicationSceneManifest
+    # Look for Info.plist with UIApplicationSceneManifest / UIDesignRequiresCompatibility
     for plist in project_path.rglob("Info.plist"):
         # Exclude Pods/ and build directories explicitly again
         if any(part in DEFAULT_EXCLUDES for part in plist.parts):
@@ -362,6 +523,9 @@ def check_architecture(project_path: Path) -> dict:
             content = plist.read_text(encoding="utf-8", errors="ignore")
             if "UIApplicationSceneManifest" in content:
                 has_scene_manifest = True
+            if "UIDesignRequiresCompatibility" in content:
+                has_compatibility_flag = True
+            if has_scene_manifest and has_compatibility_flag:
                 break
         except Exception:
             pass
@@ -370,6 +534,7 @@ def check_architecture(project_path: Path) -> dict:
         "has_scenedelegate": has_scenedelegate,
         "has_shared_instance": has_shared_instance,
         "has_scene_manifest": has_scene_manifest,
+        "has_compatibility_flag": has_compatibility_flag,
     }
 
 
@@ -394,6 +559,8 @@ def scan_project(project_path: Path, extra_excludes: List[str]) -> ScanResult:
         result.issues.extend(file_issues)
 
     result.architecture = check_architecture(project_path)
+    project_type = detect_project_type(project_path)
+    result.architecture.update(project_type)
 
     # Check for Privacy Manifest
     has_privacy_manifest = False
@@ -417,31 +584,106 @@ def scan_project(project_path: Path, extra_excludes: List[str]) -> ScanResult:
             )
         )
 
+    # Phase 2 reminder: UIDesignRequiresCompatibility is temporary and will be
+    # ignored/rejected starting with Xcode 27 (~2026-09)
+    if result.architecture.get("has_compatibility_flag"):
+        result.issues.append(
+            ScanIssue(
+                rule_id="PHASE2-001",
+                severity="info",
+                message="UIDesignRequiresCompatibility flag present — Phase 2 (Liquid Glass) pending",
+                file=str(project_path),
+                line=0,
+                column=0,
+                match="UIDesignRequiresCompatibility found in Info.plist",
+                suggestion="Plan Phase 2: remove the flag and complete Liquid Glass adaptation before Xcode 27 (~2026-09)",
+            )
+        )
+
+    # iOS 27 build-chain check: -ld_classic is removed in Xcode 27 (build fails)
+    for config_file in list(project_path.rglob("*.xcconfig")) + list(project_path.rglob("*.pbxproj")):
+        if should_exclude(config_file, extra_excludes):
+            continue
+        try:
+            content = config_file.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        for line_no, line in enumerate(content.splitlines(), start=1):
+            if "ld_classic" in line:
+                result.issues.append(
+                    ScanIssue(
+                        rule_id="LINKER-001",
+                        severity="warning",
+                        message="-ld_classic linker flag (removed in Xcode 27)",
+                        file=str(config_file),
+                        line=line_no,
+                        column=line.find("ld_classic") + 1,
+                        match="ld_classic",
+                        suggestion="ld64 is fully removed in Xcode 27 and -ld_classic causes a build failure. Remove the flag and upgrade third-party libraries that depend on the classic linker.",
+                    )
+                )
+
+    # iOS 27 check: LSApplicationQueriesSchemes limit drops from 50 to 25 entries
+    # for apps linked against the iOS 27 SDK
+    for plist in project_path.rglob("Info.plist"):
+        if any(part in DEFAULT_EXCLUDES for part in plist.parts):
+            continue
+        try:
+            content = plist.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        schemes_block = re.search(
+            r"<key>LSApplicationQueriesSchemes</key>\s*<array>(.*?)</array>", content, re.DOTALL
+        )
+        if schemes_block:
+            scheme_count = len(re.findall(r"<string>", schemes_block.group(1)))
+            if scheme_count > 25:
+                result.issues.append(
+                    ScanIssue(
+                        rule_id="OPENURL-002",
+                        severity="warning",
+                        message=f"LSApplicationQueriesSchemes has {scheme_count} entries (iOS 27 limit: 25)",
+                        file=str(plist),
+                        line=0,
+                        column=0,
+                        match=f"{scheme_count} scheme entries",
+                        suggestion="Apps linked on or after the iOS 27 SDK are limited to 25 LSApplicationQueriesSchemes entries (down from 50); excess schemes silently return false. Trim the list or migrate to attempt-and-handle with open(_:options:completionHandler:).",
+                    )
+                )
+
+    # Determine severity for architecture issues based on project type
+    # For pure Swift iOS 13+ projects without SceneDelegate: downgrade to warning
+    # because backward compatibility is still supported (though iOS 27 will require it)
+    # NOTE: deployment_target may be None when no Podfile/pbxproj declares it — guard with `or 0`
+    arch_severity = "error"
+    if result.architecture.get("is_swift_only") and (result.architecture.get("deployment_target") or 0) >= 13.0:
+        arch_severity = "warning"
+
     # Add architecture infos
     if not result.architecture["has_scenedelegate"]:
         result.issues.append(
             ScanIssue(
                 rule_id="ARCH-001",
-                severity="error",
+                severity=arch_severity,
                 message="Missing SceneDelegate file",
                 file=str(project_path),
                 line=0,
                 column=0,
                 match="SceneDelegate.swift/m not found",
-                suggestion="Create SceneDelegate and configure UIApplicationSceneManifest in Info.plist",
+                suggestion="Create SceneDelegate and configure UIApplicationSceneManifest in Info.plist (mandatory for iOS 27)",
             )
         )
     if not result.architecture["has_scene_manifest"]:
         result.issues.append(
             ScanIssue(
                 rule_id="ARCH-002",
-                severity="error",
+                severity=arch_severity,
                 message="Missing UIApplicationSceneManifest in Info.plist",
                 file=str(project_path),
                 line=0,
                 column=0,
                 match="UIApplicationSceneManifest not found in any Info.plist",
-                suggestion="Add UIApplicationSceneManifest configuration to Info.plist",
+                suggestion="Add UIApplicationSceneManifest configuration to Info.plist (mandatory for iOS 27)",
             )
         )
     if not result.architecture["has_shared_instance"]:
@@ -454,7 +696,7 @@ def scan_project(project_path: Path, extra_excludes: List[str]) -> ScanResult:
                 line=0,
                 column=0,
                 match="sharedInstance not found in AppDelegate",
-                suggestion="Add a sharedInstance class method to AppDelegate for SceneDelegate forwarding",
+                suggestion="Add a sharedInstance class method to AppDelegate for SceneDelegate forwarding (Swift projects can use static let shared)",
             )
         )
 

@@ -5,9 +5,18 @@
 //  Unified window and navigation access interface for SceneDelegate architecture.
 //  Compatible with iOS 12+ (iOS 12 uses AppDelegate.window, iOS 13+ uses connectedScenes).
 //
+//  Usage for Swift-only projects:
+//      UIApplication.shared.mainWindow
+//      UIApplication.shared.visibleViewController
+//
+//  Usage for mixed Swift/Objective-C projects:
+//      Swift: UIApplication.shared.mainWindow
+//      Objective-C: [[UIApplication sharedApplication] ne_mainWindow]
+//
 
 import UIKit
 
+@MainActor
 public extension UIApplication {
     
     /// Returns the current key window, compatible with both iOS 12 and iOS 13+.

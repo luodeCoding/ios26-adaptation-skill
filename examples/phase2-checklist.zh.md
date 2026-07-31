@@ -40,6 +40,8 @@
 - [ ] **右侧导航栏按钮**: 验证 Liquid Glass 下的间距和顺序（如需要，使用 `UINavigationBar+LiquidGlassAdapter`）
 - [ ] **左侧导航栏按钮**: 决定是否应用 PlatterView 修复，或保留系统返回按钮不变
 - [ ] 测试多个 `rightBarButtonItems` — 确认顺序与 iOS 26 之前一致
+- [ ] **导航栏叠加视图**: 确认无直接 `addSubview` 到 navigationBar 的视图（iOS 26 合成层会吞掉，改用 `navigationController.view` 或 `titleView`，扫描规则 `NAVBAR-001`）
+- [ ] **图片按钮着色**: `AlwaysOriginal` 渲染模式的按钮不被蓝色 tintColor 覆盖（必要时设 `tintColor = .clear` 或改用 customView）
 
 ### TabBar
 - [ ] 检查 TabBar 自定义样式
@@ -47,6 +49,8 @@
 - [ ] 检查选中/未选中状态
 - [ ] 在不同主题下测试 TabBar
 - [ ] 验证 TabBar 透明度
+- [ ] **自定义 TabBar**: 确认无 `setValue:forKey:@"tabBar"` 私有 KVC（iOS 26 闪退，扫描规则 `TABBAR-001`；样式用 `UITabBarAppearance`，完全自定义用容器控制器方案）
+- [ ] **状态栏布局**: 确认布局不依赖 `statusBarFrame`（iOS 26 某些时机返回 0，改用 `safeAreaLayoutGuide`）
 
 ### 键盘
 - [ ] 检查所有文本输入框

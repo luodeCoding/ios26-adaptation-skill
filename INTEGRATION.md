@@ -109,9 +109,13 @@ AI 参考模板，直接在主项目中生成修复代码
 | `AGENTS.md` | Claude Code 工作流、触发条件 | AI |
 | `templates/swift/` | Swift 代码模板 | AI 参考后生成代码 |
 | `templates/objc/` | Objective-C 代码模板 | AI 参考后生成代码 |
-| `scripts/ios26-scanner.py` | 废弃 API 扫描脚本 | AI / 开发者手动运行 |
+| `templates/mixed/` | 混编项目桥接方案 | AI 参考后生成代码 |
+| `templates/PrivacyInfo.xcprivacy` | Privacy Manifest 模板 | 开发者复制后修改 |
+| `scripts/ios26-scanner.py` | 废弃 API 扫描脚本（40+ 条规则） | AI / 开发者手动运行 |
 | `docs/faq.md` | 常见问题解答 | 开发者参考 |
-| `examples/` | 分阶段检查清单 | AI + 开发者 |
+| `docs/sdk-compatibility.md` | 第三方 SDK 兼容性速查表 | 开发者参考 |
+| `docs/ios27-preview.md` | iOS 27 / Xcode 27 适配前瞻（第三阶段） | AI + 开发者 |
+| `examples/` | 分阶段检查清单（第一/二/三阶段，双语） | AI + 开发者 |
 
 ---
 
@@ -128,10 +132,20 @@ python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py \
     --output report.json
 ```
 
-扫描内容：
-- `keyWindow` 使用
-- `delegate.window` 使用
-- `UNNotificationPresentationOptionAlert`
-- `UNAuthorizationOptionAlert` (NOT deprecated — no action needed)
-- SceneDelegate 配置状态
-- AppDelegate `sharedInstance` 方法
+扫描内容（共 40+ 项检查，完整规则参考见 `SKILL.md`）：
+
+**iOS 26 核心适配**
+- `keyWindow` / `delegate.window` / `windows` / `statusBarFrame` 等窗口访问废弃 API
+- `UNNotificationPresentationOptionAlert`（`UNAuthorizationOptionAlert` 未废弃，不会误报）
+- SceneDelegate 配置状态、AppDelegate `sharedInstance` 方法
+- AssetsLibrary、StoreKit 1、SiriKit、SwiftUI 废弃 API、Privacy Manifest 缺失
+
+**iOS 26 运行时实战坑**
+- 私有 KVC `setValue:forKey:@"tabBar"`（iOS 26 闪退）
+- `navigationBar addSubview`（被合成层吞掉）
+- `rightBarButtonItems` 顺序/间距变化
+
+**iOS 27 前瞻**
+- `canOpenURL` 弃用、`LSApplicationQueriesSchemes` 超 25 条上限
+- `-ld_classic` 残留链接器标志（Xcode 27 移除）
+- `NSBundleResourceRequest`（ODR 弃用）、`MXMetricManager`（替换为 MetricManager）

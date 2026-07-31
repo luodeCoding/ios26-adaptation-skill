@@ -51,6 +51,29 @@ class TestScannerRules(unittest.TestCase):
         f.unlink()
         self.assertEqual(len(issues), 1)
 
+    # --- Window Rules (new in v1.8) ---
+
+    def test_window_007_shared_windows_swift(self):
+        f = self._make_file("let w = UIApplication.shared.windows.first")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "WINDOW-007"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "warning")
+
+    def test_window_008_shared_windows_oc(self):
+        f = self._make_file("UIWindow *w = [UIApplication sharedApplication].windows.firstObject;", ".m")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "WINDOW-008"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+
+    def test_window_003_skips_mainwindow_template_fallback(self):
+        """UIApplication+MainWindow template's iOS 12 fallback should not be flagged."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            f = Path(tmpdir) / "UIApplication+MainWindow.swift"
+            f.write_text("return delegate?.window ?? nil")
+            issues = scan_file(f, [r for r in RULES if r["id"] == "WINDOW-003"])
+            self.assertEqual(len(issues), 0)
+
     # --- Screen Rules (new in v1.3) ---
 
     def test_screen_001_uiscreen_main_swift(self):
@@ -215,6 +238,86 @@ class TestScannerRules(unittest.TestCase):
         self.assertEqual(len(issues), 1)
         self.assertEqual(issues[0].severity, "info")
 
+    # --- Status Bar Rule (new in v1.8) ---
+
+    def test_status_004_statusbarframe(self):
+        f = self._make_file("let h = UIApplication.shared.statusBarFrame.height")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "STATUS-004"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "warning")
+
+    def test_status_004_skips_statusbarmanager(self):
+        """Modern statusBarManager.statusBarFrame replacement should not be flagged."""
+        f = self._make_file("let h = windowScene.statusBarManager?.statusBarFrame.height")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "STATUS-004"])
+        f.unlink()
+        self.assertEqual(len(issues), 0)
+
+    # --- iOS 26 runtime pitfall rules (new in v1.9) ---
+
+    def test_tabbar_001_kvc_override_oc(self):
+        f = self._make_file('[self setValue:customTabBar forKey:@"tabBar"];', ".m")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "TABBAR-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "error")
+
+    def test_tabbar_001_kvc_override_swift(self):
+        f = self._make_file('setValue(customTabBar, forKey: "tabBar")')
+        issues = scan_file(f, [r for r in RULES if r["id"] == "TABBAR-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+
+    def test_navbar_001_addsubview_oc(self):
+        f = self._make_file("[self.navigationController.navigationBar addSubview:badge];", ".m")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "NAVBAR-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "warning")
+
+    def test_navbar_001_addsubview_swift(self):
+        f = self._make_file("navigationController?.navigationBar.addSubview(badge)")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "NAVBAR-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+
+    def test_barbutton_001_rightbarbuttonitems(self):
+        f = self._make_file("navigationItem.rightBarButtonItems = [shareItem, editItem]")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "BARBUTTON-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "info")
+
+    # --- iOS 27 forward-looking rules (new in v1.9) ---
+
+    def test_openurl_001_canopenurl(self):
+        f = self._make_file("if UIApplication.shared.canOpenURL(url) { }")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "OPENURL-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "info")
+
+    def test_openurl_001_skips_comment(self):
+        f = self._make_file("// canOpenURL is deprecated in iOS 27")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "OPENURL-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 0)
+
+    def test_odr_001_bundle_resource_request(self):
+        f = self._make_file("let request = NSBundleResourceRequest(tags: tags)")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "ODR-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "warning")
+
+    def test_metrickit_001_mxmetricmanager(self):
+        f = self._make_file("MXMetricManager.shared.add(self)")
+        issues = scan_file(f, [r for r in RULES if r["id"] == "METRICKIT-001"])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "warning")
+
     # --- False Positive Tests ---
 
     def test_notif_002_removed_no_longer_flags(self):
@@ -224,6 +327,50 @@ class TestScannerRules(unittest.TestCase):
         f.unlink()
         notif_issues = [i for i in all_issues if "UNAuthorizationOptionAlert" in i.match]
         self.assertEqual(len(notif_issues), 0)
+
+    # --- AssetsLibrary Rules (new in v1.7) ---
+
+    def test_assetslibrary_001_swift_import(self):
+        f = self._make_file("import AssetsLibrary\nclass Foo {}")
+        issues = scan_file(f, [
+            r for r in __import__("ios26_scanner").RULES if r["id"] == "ASSETSLIBRARY-001"
+        ])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "error")
+
+    def test_assetslibrary_002_oc_import(self):
+        f = self._make_file('#import <AssetsLibrary/AssetsLibrary.h>\n@interface Foo @end', ".m")
+        issues = scan_file(f, [
+            r for r in __import__("ios26_scanner").RULES if r["id"] == "ASSETSLIBRARY-002"
+        ])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "error")
+
+    def test_assetslibrary_003_alassetslibrary_usage(self):
+        f = self._make_file("let lib = ALAssetsLibrary()")
+        issues = scan_file(f, [
+            r for r in __import__("ios26_scanner").RULES if r["id"] == "ASSETSLIBRARY-003"
+        ])
+        f.unlink()
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].severity, "error")
+
+    # --- SCREEN false positive: Pods/Vender skip (new in v1.7) ---
+
+    def test_screen_skips_pods_directory(self):
+        f = self._make_file("let frame = UIScreen.main.bounds")
+        # Manually rename to simulate Pods path
+        pods_path = f.parent / "Pods" / "SomeLib" / "File.swift"
+        pods_path.parent.mkdir(parents=True, exist_ok=True)
+        f.rename(pods_path)
+        issues = scan_file(pods_path, [
+            r for r in __import__("ios26_scanner").RULES if r["id"] == "SCREEN-001"
+        ])
+        # _should_skip_issue now filters out SCREEN issues in Pods/Vender/ThirdParty directories
+        pods_path.unlink()
+        self.assertEqual(len(issues), 0)
 
 
 class TestArchitectureCheck(unittest.TestCase):
@@ -246,6 +393,77 @@ class TestArchitectureCheck(unittest.TestCase):
             arch = check_architecture(project)
             self.assertTrue(arch["has_scenedelegate"])
             self.assertTrue(arch["has_scene_manifest"])
+
+    def test_compatibility_flag_detected(self):
+        """UIDesignRequiresCompatibility in Info.plist should be reported (new in v1.8)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project = Path(tmpdir)
+            (project / "Info.plist").write_text(
+                "<plist>UIApplicationSceneManifest UIDesignRequiresCompatibility</plist>"
+            )
+            arch = check_architecture(project)
+            self.assertTrue(arch["has_compatibility_flag"])
+            result = scan_project(project, [])
+            rule_ids = {i.rule_id for i in result.issues}
+            self.assertIn("PHASE2-001", rule_ids)
+
+    def test_deployment_target_from_pbxproj(self):
+        """Deployment target should fall back to .pbxproj parsing (new in v1.8)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project = Path(tmpdir)
+            pbx_dir = project / "MyApp.xcodeproj"
+            pbx_dir.mkdir()
+            (pbx_dir / "project.pbxproj").write_text(
+                "IPHONEOS_DEPLOYMENT_TARGET = 13.0;\nIPHONEOS_DEPLOYMENT_TARGET = 15.0;"
+            )
+            info = _scanner.detect_project_type(project)
+            self.assertEqual(info["deployment_target"], 13.0)
+
+    def test_swift_only_without_deployment_target_no_crash(self):
+        """Regression: swift-only project with no Podfile/pbxproj must not raise TypeError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project = Path(tmpdir)
+            (project / "Main.swift").write_text("let x = 1")
+            result = scan_project(project, [])  # must not raise
+            self.assertTrue(result.architecture["is_swift_only"])
+            self.assertIsNone(result.architecture["deployment_target"])
+
+    def test_linker_001_ld_classic_in_xcconfig(self):
+        """-ld_classic in build configs should be flagged (removed in Xcode 27, new in v1.9)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project = Path(tmpdir)
+            (project / "Release.xcconfig").write_text(
+                'OTHER_LDFLAGS = $(inherited) -Wl,-ld_classic\n'
+            )
+            result = scan_project(project, [])
+            linker_issues = [i for i in result.issues if i.rule_id == "LINKER-001"]
+            self.assertEqual(len(linker_issues), 1)
+            self.assertEqual(linker_issues[0].line, 1)
+
+    def test_openurl_002_scheme_limit_exceeded(self):
+        """LSApplicationQueriesSchemes > 25 entries should warn (iOS 27 limit, new in v1.9)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project = Path(tmpdir)
+            schemes = "".join(f"<string>scheme{i}</string>" for i in range(30))
+            (project / "Info.plist").write_text(
+                f"<plist><key>LSApplicationQueriesSchemes</key><array>{schemes}</array></plist>"
+            )
+            result = scan_project(project, [])
+            openurl_issues = [i for i in result.issues if i.rule_id == "OPENURL-002"]
+            self.assertEqual(len(openurl_issues), 1)
+            self.assertIn("30", openurl_issues[0].message)
+
+    def test_openurl_002_within_limit_not_flagged(self):
+        """25 or fewer scheme entries should not be flagged."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project = Path(tmpdir)
+            schemes = "".join(f"<string>scheme{i}</string>" for i in range(25))
+            (project / "Info.plist").write_text(
+                f"<plist><key>LSApplicationQueriesSchemes</key><array>{schemes}</array></plist>"
+            )
+            result = scan_project(project, [])
+            openurl_issues = [i for i in result.issues if i.rule_id == "OPENURL-002"]
+            self.assertEqual(len(openurl_issues), 0)
 
 
 class TestFullProjectScan(unittest.TestCase):

@@ -1,8 +1,8 @@
 # iOS 26 适配测试指南
 
 > **适用对象**: 测试团队  
-> **文档版本**: v1.0  
-> **最后更新**: 2026-04-10
+> **文档版本**: v1.2  
+> **最后更新**: 2026-07-30
 
 ---
 
@@ -22,6 +22,7 @@
 | -------- | ------------------- | ------------ |
 | **第一阶段** | SDK 构建适配测试          | 2026-04-28   |
 | **第二阶段** | Liquid Glass 完整适配测试 | Xcode 27 发布前 |
+| **第三阶段（前瞻）** | iOS 27 强制要求验证（UIScene/启动屏等） | iOS 27 SDK 强制前（预估 ~2027-04） |
 
 ### 1.3 测试维度
 
@@ -152,6 +153,9 @@
 | 透明度  | 导航栏背景效果  | 玻璃效果正确   | P1  |
 | 返回按钮 | 返回按钮外观   | 样式正确     | P1  |
 | 标题视图 | 自定义标题视图  | 位置正确     | P1  |
+| 导航栏叠加视图 | 直接 `addSubview` 到导航栏的视图 | 不消失（iOS 26 合成层会吞掉，应改加到 `navigationController.view`） | P0  |
+| 右侧多按钮顺序 | `rightBarButtonItems` 多按钮 | 顺序与 iOS 25 及更早版本一致（iOS 26 可能反转） | P0  |
+| 图片按钮着色 | `AlwaysOriginal` 渲染模式图片按钮 | 不被蓝色 tintColor 覆盖 | P1  |
 
 #### 4.1.2 TabBar
 
@@ -162,6 +166,7 @@
 | 选中状态 | 选中项视觉效果   | 选中态明显   | P0  |
 | 玻璃效果 | TabBar 背景 | 半透明效果正确 | P1  |
 | 浮动影响 | 底部安全区域变化 | FAB/底部弹出层位置正确 | P0 |
+| 自定义 TabBar 启动 | 使用自定义 TabBar 的页面冷启动/切换 | 不闪退、无多余 Tab（iOS 26 禁止 `setValue:forKey:@"tabBar"` 私有 KVC） | P0 |
 #### 4.1.3 键盘
 
 | 测试项   | 检查点        | 预期结果    | 优先级 |
@@ -357,6 +362,19 @@
 - [ ] 暗黑模式切换
 - [ ] 自定义背景色与玻璃效果无冲突
 - [ ] 系统阴影层（UIDropShadowView）不遮挡自定义内容
+- [ ] 自定义 TabBar（如有）不闪退、无多余 Tab
+- [ ] 导航栏叠加视图 push/pop 后不消失
+- [ ] `rightBarButtonItems` 多按钮顺序正确
+- [ ] 布局不依赖 `statusBarFrame`（iOS 26 某些时机返回 0）
+
+### 第三阶段前瞻项（iOS 27，可提前验证）
+
+> 详见 [iOS 27 适配前瞻 (docs/ios27-preview.md)](./ios27-preview.md)
+
+- [ ] 项目已完成 SceneDelegate 迁移（iOS 27 SDK 未迁移应用无法启动）
+- [ ] Info.plist 包含启动屏配置四键之一（或生成式配置，用 `xcodebuild -showBuildSettings` 确认）
+- [ ] `LSApplicationQueriesSchemes` 条目数 ≤ 25
+- [ ] 构建配置无 `-ld_classic` 残留
 
 ---
 
@@ -364,6 +382,7 @@
 
 - [SKILL.md](../SKILL.md) — Detailed adaptation strategy and implementation guides
 - [FAQ (docs/faq.md)](./faq.md) — Answers to common questions about deadlines, build errors, and Liquid Glass
+- [iOS 27 Preview (docs/ios27-preview.md)](./ios27-preview.md) — Phase 3 mandates confirmed at WWDC26
 
 ---
 

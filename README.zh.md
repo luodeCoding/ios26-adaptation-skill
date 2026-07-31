@@ -9,8 +9,8 @@
 > **语言**: Objective-C / Swift  
 > **平台**: iOS  
 > **最低 iOS 版本**: 12.0+  
-> **最后更新**: 2026-05-12  
-> **版本**: [v1.6.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.zh.md)
+> **最后更新**: 2026-07-30  
+> **版本**: [v1.9.1](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.zh.md)
 
 **本仓库是 AI 适配技能工具，不参与任何项目编译。**
 
@@ -32,11 +32,18 @@
 |------|------|------|
 | **2026-04-28** | 必须使用 iOS 26 SDK 构建 | 不合规将无法提交应用更新 |
 | **~2026-09** | Xcode 27 发布，Liquid Glass 强制启用 | `UIDesignRequiresCompatibility` 将被移除 |
+| **~2027-04（预估）** | iOS 27 SDK 构建强制（WWDC26 已确认） | 未迁移 UIScene 生命周期的应用**无法启动**；启动屏强制 |
+
+> iOS 27 要求已确认 — 详见 [docs/ios27-preview.md](docs/ios27-preview.md)（第三阶段前瞻）。
 
 ## 更新日志
 
 | 版本 | 日期 | 主要更新 |
 |------|------|---------|
+| **[v1.9.1](CHANGELOG.zh.md)** | 2026-07-30 | 第三阶段检查清单（中英）、iOS 26 实战坑测试用例、README/INTEGRATION 文档同步 |
+| **[v1.9.0](CHANGELOG.zh.md)** | 2026-07-30 | iOS 27 前瞻文档（第三阶段）、iOS 26 运行时坑 + iOS 27 前瞻扫描规则、FAQ iOS 27 章节 |
+| **[v1.8.0](CHANGELOG.zh.md)** | 2026-07-30 | `windows`/`statusBarFrame` 扫描规则、第二阶段待办提醒、扫描器崩溃/误报修复 |
+| **[v1.7.0](CHANGELOG.zh.md)** | 2026-06-02 | 纯 Swift 项目支持、AssetsLibrary 规则、项目类型自动检测 |
 | **[v1.6.0](CHANGELOG.zh.md)** | 2026-05-12 | Liquid Glass 键盘工具栏适配器、键盘扫描规则、第二阶段检查清单更新 |
 | **[v1.5.0](CHANGELOG.zh.md)** | 2026-05-06 | Privacy Manifest 模板、Swift 6 并发适配模板、第三方 SDK 兼容性速查表、单元测试、CI |
 | **[v1.4.0](CHANGELOG.zh.md)** | 2026-05-06 | StoreKit 2、SiriKit→App Intents、SwiftUI 现代 API、Photos 扫描规则 |
@@ -46,7 +53,7 @@
 
 > [查看完整更新日志 →](CHANGELOG.zh.md)
 
-## 两阶段适配
+## 两阶段适配（+ 第三阶段前瞻）
 
 ### 第一阶段：SDK 构建适配（2026-04-28 前）
 
@@ -66,6 +73,18 @@
 - 移除 `UIDesignRequiresCompatibility` 标记
 - 验证所有 UI 控件在 Liquid Glass 下的表现
 - 调整自定义 UI 以达到视觉协调
+
+### 第三阶段前瞻：iOS 27 强制要求（WWDC26 已确认）
+
+**目标**: 在 iOS 27 SDK 构建强制前（预估 ~2027-04）完成准备
+
+**关键要求**（详见 [docs/ios27-preview.md](docs/ios27-preview.md)）:
+- UIScene 生命周期强制 — 未迁移的应用用 iOS 27 SDK 构建后**无法启动**
+- 启动屏强制 — 缺少启动屏配置将被 App Store 拒审
+- `canOpenURL` 弃用；`LSApplicationQueriesSchemes` 上限减半至 25 条
+- Xcode 27 移除 `-ld_classic` 链接器
+
+> 完成第一阶段的 SceneDelegate 迁移，就已满足 iOS 27 最大的强制要求。
 
 ## 使用方式
 
@@ -108,31 +127,28 @@ ios26-adaptation-skill/
 │
 ├── docs/                  # 📚 文档
 │   ├── faq.md             # 常见问题
-│   └── testing-guide.md   # 测试指南
+│   ├── testing-guide.md   # 测试指南
+│   ├── sdk-compatibility.md # 第三方 SDK 兼容性速查表
+│   └── ios27-preview.md   # iOS 27 / Xcode 27 适配前瞻（第三阶段）
 │
 ├── .claude/               # 🎯 Claude 专用指南
 │   └── iOS26-适配框架指南.md
 │
 ├── examples/              # ✅ 检查清单
-│   ├── phase1-checklist.md
-│   ├── phase1-checklist.zh.md
-│   ├── phase2-checklist.md
-│   └── phase2-checklist.zh.md
+│   ├── phase1-checklist.md / .zh.md
+│   ├── phase2-checklist.md / .zh.md
+│   └── phase3-checklist.md / .zh.md
 │
 ├── scripts/               # 🔍 扫描脚本
-│   └── ios26-scanner.py   # 废弃 API 扫描器
+│   ├── ios26-scanner.py   # 废弃 API 扫描器（40+ 条规则）
+│   └── test_scanner.py    # 扫描器单元测试
 │
 └── templates/             # 📋 代码模板（仅参考，不编译）
-    ├── swift/             # Swift 模板
-    │   ├── UIApplication+MainWindow.swift
-    │   ├── SceneDelegate.swift
-    │   ├── AppDelegate+Setup.swift
-    │   └── UNNotificationOptions+Adapter.swift
-    └── objc/              # Objective-C 模板
-        ├── UIApplication+MainWindow.h/.m
-        ├── SceneDelegate.h/.m
-        ├── AppDelegate+Setup.h/.m
-        └── UNNotificationOptionsAdapter.h/.m
+    ├── PrivacyInfo.xcprivacy  # Privacy Manifest 模板
+    ├── swift/             # Swift 模板（窗口访问、SceneDelegate、
+    │                      #   Swift 6 并发、Liquid Glass 适配器等）
+    ├── objc/              # Objective-C 模板（覆盖范围相同）
+    └── mixed/             # 混编项目桥接方案
 ```
 
 ## 核心内容速览
@@ -149,12 +165,14 @@ ios26-adaptation-skill/
 ### 扫描脚本
 
 ```bash
-# 扫描主项目的废弃 API
+# 扫描主项目的废弃 API（40+ 条规则：iOS 26 + iOS 27 前瞻）
 python3 scripts/ios26-scanner.py /path/to/your/ios/project
 
 # 输出 JSON 报告
 python3 scripts/ios26-scanner.py /path/to/your/ios/project --format json --output report.json
 ```
+
+覆盖范围：窗口访问（`keyWindow` / `windows` / `statusBarFrame`）、SceneDelegate 架构、通知选项、iOS 26 运行时坑（`tabBar` KVC 闪退、`navigationBar addSubview`），以及 iOS 27 前瞻检查（`canOpenURL`、`-ld_classic`、`LSApplicationQueriesSchemes` 上限、ODR、MetricKit）。完整规则参考见 [SKILL.md](SKILL.md)。
 
 ### AI 技能文档
 
@@ -178,6 +196,8 @@ python3 scripts/ios26-scanner.py /path/to/your/ios/project --format json --outpu
 - [Apple Developer 新闻](https://developer.apple.com/news/)
 - [iOS 26 发布说明](https://developer.apple.com/documentation/ios-release-notes)
 - [Liquid Glass 设计指南](https://developer.apple.com/design/)
+- [App Store 即将生效的要求](https://developer.apple.com/news/upcoming-requirements/)
+- [迁移到 UIKit 场景生命周期](https://developer.apple.com/documentation/uikit/transitioning-to-the-uikit-scene-based-life-cycle)
 
 ## 许可证
 

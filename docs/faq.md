@@ -1,6 +1,6 @@
 # iOS 26 Adaptation FAQ
 
-> **Last Updated:** 2026-04-14
+> **Last Updated:** 2026-07-30
 
 ---
 
@@ -31,6 +31,16 @@ Apple requires all apps submitted after **April 28, 2026** to be built with the 
 If your app targets **iOS 13+** and does not yet use `SceneDelegate`, then **yes**, you should migrate. iOS 26 SDK enforces stricter window access patterns, and `keyWindow` / `delegate.window` will cause build errors or runtime issues.
 
 If your app only targets **iOS 12** (extremely rare today), SceneDelegate is not required, but you must still build with iOS 26 SDK.
+
+> **Note for pure Swift projects:** If your deployment target is iOS 13+ and you don't have SceneDelegate yet, the app will still compile on iOS 26 SDK (backward compatibility is maintained). However, **iOS 27 has been confirmed at WWDC26 to make the scene-based lifecycle mandatory** — apps built with the iOS 27 SDK without it **fail to launch**. Migrate now to avoid last-minute issues (see Q36).
+
+### Q5a: My pure Swift project doesn't have SceneDelegate. Is that a build error?
+
+**No.** For pure Swift projects targeting iOS 13+, the absence of SceneDelegate does not cause a compilation failure on iOS 26 SDK. Apple maintains backward compatibility for legacy AppDelegate.window apps.
+
+However, you will encounter **compile errors** for removed APIs like `UIApplication.shared.keyWindow`. The fix is to replace `keyWindow` with a SceneDelegate-compatible window accessor (e.g., `UIApplication.shared.mainWindow`) **and** add SceneDelegate — iOS 27 makes it mandatory (apps fail to launch without it, see Q36).
+
+Use the simplified pure-Swift templates (`templates/swift/SceneDelegate+SwiftOnly.swift`, `templates/swift/AppDelegate+SwiftOnly.swift`) which avoid `@objc` annotations and use `static let shared` instead of `sharedInstance`.
 
 ### Q6: My project uses CocoaPods. What if Pods contain deprecated APIs?
 
@@ -100,7 +110,16 @@ Common fixes:
 
 ### Q14: Build error: `'keyWindow' was deprecated in iOS 13.0`
 
-This becomes an **error** in iOS 26 SDK. Replace all occurrences with the unified window access interface. See `templates/swift/UIApplication+Extension.swift` or `templates/objc/UIApplication+Extension.h/.m`.
+This becomes an **error** in iOS 26 SDK. Replace all occurrences with the unified window access interface. See `templates/swift/UIApplication+MainWindow.swift` or `templates/objc/UIApplication+MainWindow.h/.m`.
+
+### Q14a: Build error: `'ALAssetsLibrary' is unavailable in iOS`
+
+`AssetsLibrary.framework` and `ALAssetsLibrary` are **obsoleted in iOS 26** (not just deprecated). Any `import AssetsLibrary` or `#import <AssetsLibrary/AssetsLibrary.h>` will cause a build error.
+
+**Fix:**
+1. Remove all `import AssetsLibrary` / `#import <AssetsLibrary/AssetsLibrary.h>` statements
+2. Replace any `ALAssetsLibrary` usage with `PHPhotoLibrary` from the `Photos` framework
+3. Most projects only used AssetsLibrary for photo permissions — these should already be using `PHPhotoLibrary.authorizationStatus()`
 
 ### Q15: Build error: `Cannot find 'SceneDelegate' in scope`
 
@@ -108,7 +127,7 @@ Your `Info.plist` references `SceneDelegate` under `UIApplicationSceneManifest`,
 
 ### Q16: Runtime issue: `window` returns `nil` on iOS 13+
 
-You are likely still accessing `AppDelegate.window` or `UIApplication.shared.keyWindow` somewhere. In the SceneDelegate architecture, the key window belongs to the active `UIWindowScene`, not the app delegate. Use the `UIApplication+Extension` template to safely retrieve the current window across all iOS versions.
+You are likely still accessing `AppDelegate.window` or `UIApplication.shared.keyWindow` somewhere. In the SceneDelegate architecture, the key window belongs to the active `UIWindowScene`, not the app delegate. Use the `UIApplication+MainWindow` template to safely retrieve the current window across all iOS versions.
 
 ### Q17: Runtime issue: Lifecycle events (background/foreground) are not firing
 
@@ -154,6 +173,20 @@ See `templates/swift/UNNotificationOptions+Adapter.swift` or `templates/objc/UNN
 - **For iOS 12 fallback path**: You may still use `UIScreen.main.bounds` inside the `else` branch of `#available(iOS 13.0, *)`. The compiler warning is acceptable here because there is no alternative on iOS 12.
 
 > ⚠️ If your deployment target is iOS 13+, remove all `UIScreen.main` usage entirely.
+
+### Q19a: Build warning: `windows` / `statusBarFrame` deprecated
+
+Two more window-related deprecations become noisy under the iOS 26 SDK:
+
+- **`UIApplication.shared.windows`** (deprecated since iOS 15): enumerate `connectedScenes` and use `UIWindowScene.windows` instead — or simply use the `UIApplication+MainWindow` template which already does this.
+- **`UIApplication.shared.statusBarFrame`** (deprecated since iOS 13): use the scene's status bar manager:
+
+  ```swift
+  let height = UIApplication.shared.mainWindow?
+      .windowScene?.statusBarManager?.statusBarFrame.height ?? 0
+  ```
+
+The scanner flags these as `WINDOW-007/008` and `STATUS-004`.
 
 ### Q20: Hundreds of new concurrency warnings after building with Xcode 26
 
@@ -248,7 +281,7 @@ However, this causes two side effects:
 - **Recommended**: apply the fix to **right-side items only** (`applyRightBarButtonItemsFix`). The system back button on the left usually looks fine; only apply left-side fixes if your design team explicitly requires it.
 - Call `navController.applyLiquidGlassRightButtonFix()` (Swift) or `[navController lg_applyLiquidGlassRightButtonFix]` (Objective-C) after creating your navigation controller.
 
-### Q25: Custom background colors look wrong with Liquid Glass
+### Q25a: Custom background colors look wrong with Liquid Glass
 
 Liquid Glass uses **refraction layers** that expect translucency. Custom solid `backgroundColor` on `UINavigationBar`, `UITabBar`, or `UIToolbar` creates visual seams.
 
@@ -256,6 +289,44 @@ Liquid Glass uses **refraction layers** that expect translucency. Custom solid `
 - Remove custom `backgroundColor` on these bars
 - Use `UIBlurEffect` / `UIVisualEffectView` if you need a custom background
 - Or let the system apply the default glass material
+
+### Q25b: App crashes on iOS 26 with custom TabBar (`setValue:forKey:@"tabBar"`)
+
+iOS 26 adds **runtime protection** to the `tabBar` property of `UITabBarController`. The classic private-KVC trick:
+
+```objc
+[self setValue:customTabBar forKey:@"tabBar"];   // 💥 iOS 26
+```
+
+now causes a **crash**, an extra tab appearing, or the custom tab bar silently failing.
+
+**Fix**:
+- For styling only: use `UITabBarAppearance` (`standardAppearance` / `scrollEdgeAppearance`)
+- For a fully custom tab bar: build a custom container view controller and hide the system tab bar, instead of overriding the private property
+- The scanner flags this as `TABBAR-001` (Error)
+
+### Q25c: View added to navigationBar disappears on iOS 26
+
+iOS 26's new navigation bar uses a **compositing layer structure** that swallows subviews added directly via `[navigationBar addSubview:]` — typically the view vanishes after a push/pop.
+
+**Fix**:
+- Add overlay views to `navigationController.view` instead
+- For title-area content, use `navigationItem.titleView`
+- The scanner flags this as `NAVBAR-001` (Warning)
+
+### Q25d: Bar button image shows blue tint despite `AlwaysOriginal` on iOS 26
+
+On iOS 26, a `UIBarButtonItem` created from an image with `UIImageRenderingModeAlwaysOriginal` may still render with the blue `tintColor`.
+
+**Fix** (either works):
+- Set `item.tintColor = UIColor.clear` on the affected item, or
+- Use a `customView` `UIButton` with the image instead of an image-based bar button item
+
+### Q25e: `statusBarFrame` returns 0 on iOS 26
+
+`windowScene.statusBarManager.statusBarFrame` can return a zero frame at certain lifecycle moments on iOS 26 (early in scene connection, during transitions).
+
+**Fix**: don't base layout on status-bar frame math — use `view.safeAreaLayoutGuide` / `safeAreaInsets`, which the system keeps correct at all times.
 
 ---
 
@@ -339,7 +410,7 @@ Benefits: no photo library permission required, supports multi-selection and fil
 
 ## Testing
 
-### Q19: What is the minimum device matrix I should test?
+### Q31: What is the minimum device matrix I should test?
 
 | iOS Version | Priority | What to verify |
 |-------------|----------|----------------|
@@ -348,7 +419,7 @@ Benefits: no photo library permission required, supports multi-selection and fil
 | iOS 16-17 | P1 | General stability |
 | iOS 26.x | P0 | Build success, new APIs work, Liquid Glass disabled (Phase 1) or enabled (Phase 2) |
 
-### Q20: Can I automate the scanning process?
+### Q32: Can I automate the scanning process?
 
 Yes. This skill includes `scripts/ios26-scanner.py`, which scans your project for deprecated APIs and architectural gaps. Run it like this:
 
@@ -361,17 +432,75 @@ python3 scripts/ios26-scanner.py /path/to/your/ios/project --format json --outpu
 
 ## Strategy & Planning
 
-### Q21: We have a release planned for April 20, 2026. What should we do?
+### Q33: We have a release planned for April 20, 2026. What should we do?
 
 Use **Strategy A**: keep `main` unchanged for the April 20 release, and create `feature/ios26-adaptation` to prepare Phase 1. Merge the branch after April 28.
 
-### Q22: We have no release planned until October 2026. What should we do?
+### Q34: We have no release planned until October 2026. What should we do?
 
 Use **Strategy C**: combine Phase 1 and Phase 2 into a single iteration. You do not need `UIDesignRequiresCompatibility`; instead, fully adapt to Liquid Glass upfront.
 
-### Q23: Should I create separate branches for Phase 1 and Phase 2?
+### Q35: Should I create separate branches for Phase 1 and Phase 2?
 
 You can, but it is optional. A single `feature/ios26-adaptation` branch is usually sufficient. If Phase 2 work is large or involves a design team, consider sub-branches (`feature/ios26-phase1`, `feature/ios26-phase2`).
+
+---
+
+## iOS 27 Preview (Confirmed at WWDC26)
+
+> Full details: [docs/ios27-preview.md](./ios27-preview.md)
+
+### Q36: Is it true that apps will fail to launch on iOS 27 without SceneDelegate?
+
+**Yes — confirmed by Apple.** Per the official migration guide: "Beginning in iOS 27, iPadOS 27, Mac Catalyst 27, tvOS 27, and visionOS 27, apps built with the latest SDK must adopt the scene-based life cycle **or they fail to launch**."
+
+Key nuances:
+- The trigger is **the SDK you build with**, not the user's OS version. Shipped binaries built with the iOS 26 SDK keep working on iOS 27.
+- You need to migrate if **either**: your Info.plist has no `UIApplicationSceneManifest` configuration, **or** your AppDelegate doesn't implement `application(_:configurationForConnecting:options:)`.
+- **Multi-window support stays optional** — only the lifecycle itself is mandated.
+- UIKit has logged a migration warning for affected apps since iOS 18.4.
+
+Completing this skill's Phase 1 SceneDelegate migration satisfies the requirement.
+
+### Q37: Will my app be rejected for a missing launch screen on iOS 27?
+
+**Yes**, for apps built with the 27.0 SDK. The Info.plist must contain one of: `UILaunchStoryboardName`, `UILaunchStoryboards`, `UILaunchScreen`, or `UILaunchScreens`. Missing all four → App Store **rejects** the submission (iOS/iPadOS only).
+
+⚠️ **Don't audit by grepping the repo**: Xcode 13+ projects with generated Info.plist (`GENERATE_INFOPLIST_FILE = YES`) write the key at build time via `INFOPLIST_KEY_UILaunchScreen_Generation = YES` — no file in the repository contains it. Ask the build system instead:
+
+```bash
+xcodebuild -showBuildSettings -project YourApp.xcodeproj -target YourApp \
+  -configuration Release -sdk iphoneos 2>/dev/null \
+  | grep -E "^ +(GENERATE_INFOPLIST_FILE|INFOPLIST_FILE|INFOPLIST_KEY_UILaunch)"
+```
+
+Highest-risk group: old projects still using the long-deprecated `UILaunchImages` key — it does **not** count.
+
+### Q38: `canOpenURL` is deprecated in iOS 27 — what do I use instead?
+
+Apple's guidance is **attempt-and-handle**: call `open(_:options:completionHandler:)` directly and handle the failure, instead of validating first. The `open` method is **not constrained** by `LSApplicationQueriesSchemes`.
+
+```swift
+let opened = await UIApplication.shared.open(url)
+if !opened { presentWebFallback() }
+```
+
+Two things to plan for:
+1. **`LSApplicationQueriesSchemes` limit drops from 50 to 25** for apps linked against the iOS 27 SDK — excess entries silently return `false`. The scanner flags >25 entries as `OPENURL-002`.
+2. "Is app X installed?" checks without side effects lose their direct equivalent. The surviving option is `universalLinksOnly: true` (Universal Links only, not custom schemes).
+
+### Q39: What build-chain changes should I prepare for Xcode 27?
+
+Confirmed P0/P1 items:
+
+| Change | Impact | Quick check |
+|--------|--------|-------------|
+| `-ld_classic` / ld64 removed | Build failure | `grep -r "ld_classic" --include="*.xcconfig" --include="*.pbxproj" .` |
+| Clang module name dedup enforced | Build failure | `find . -name "module.modulemap" \| sort` |
+| On Demand Resources deprecated | Migrate to Background Assets | `grep -r "NSBundleResourceRequest" --include="*.swift" --include="*.m" .` |
+| `MXMetricManager` → `MetricManager` | MetricKit rework | scanner rule `METRICKIT-001` |
+
+The scanner covers `-ld_classic` (`LINKER-001`), ODR (`ODR-001`), and MetricKit (`METRICKIT-001`) automatically.
 
 ---
 
@@ -379,6 +508,7 @@ You can, but it is optional. A single `feature/ios26-adaptation` branch is usual
 
 - [SKILL.md](../SKILL.md) — Detailed adaptation strategy and implementation guides
 - [Testing Guide (docs/testing-guide.md)](./testing-guide.md) — Complete testing framework for QA teams
+- [iOS 27 Preview (docs/ios27-preview.md)](./ios27-preview.md) — Confirmed iOS 27 / Xcode 27 mandates and migration paths
 - [templates/](../templates/) — Production-ready Swift and Objective-C code templates
 
 ---

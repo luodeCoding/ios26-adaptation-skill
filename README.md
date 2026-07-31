@@ -9,8 +9,8 @@
 > **Languages**: Objective-C / Swift  
 > **Platform**: iOS  
 > **Minimum iOS Version**: 12.0+  
-> **Last Updated**: 2026-05-12  
-> **Version**: [v1.6.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
+> **Last Updated**: 2026-07-30  
+> **Version**: [v1.9.1](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
 
 **This repository is an AI adaptation skill tool. It does not participate in any project compilation.**
 
@@ -32,11 +32,18 @@ This repository is a **standalone skill knowledge base** for:
 |------|-------------|--------|
 | **2026-04-28** | Must build with iOS 26 SDK | Non-compliant submissions will be rejected |
 | **~2026-09** | Xcode 27 release, Liquid Glass mandatory | `UIDesignRequiresCompatibility` will be removed |
+| **~2027-04 (est.)** | iOS 27 SDK build mandate (confirmed at WWDC26) | Apps without UIScene lifecycle **fail to launch**; launch screen mandatory |
+
+> iOS 27 requirements are already confirmed — see [docs/ios27-preview.md](docs/ios27-preview.md) for the Phase 3 preview.
 
 ## Changelog
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **[v1.9.1](CHANGELOG.md)** | 2026-07-30 | Phase 3 checklists (EN/ZH), iOS 26 pitfall test cases, README/INTEGRATION doc sync |
+| **[v1.9.0](CHANGELOG.md)** | 2026-07-30 | iOS 27 preview doc (Phase 3), iOS 26 runtime pitfall + iOS 27 forward-looking scanner rules, FAQ iOS 27 section |
+| **[v1.8.0](CHANGELOG.md)** | 2026-07-30 | `windows`/`statusBarFrame` scanner rules, Phase 2 pending reminder, scanner crash/false-positive fixes |
+| **[v1.7.0](CHANGELOG.md)** | 2026-06-02 | Pure Swift project support, AssetsLibrary rules, project type auto-detection |
 | **[v1.6.0](CHANGELOG.md)** | 2026-05-12 | Liquid Glass keyboard toolbar adapter, keyboard scanner rules, Phase 2 checklist updates |
 | **[v1.5.0](CHANGELOG.md)** | 2026-05-06 | Privacy Manifest template, Swift 6 adapter, SDK compatibility sheet, unit tests, CI |
 | **[v1.4.0](CHANGELOG.md)** | 2026-05-06 | StoreKit 2, SiriKit→App Intents, SwiftUI modern APIs, Photos, Privacy Manifest scanner rules |
@@ -46,7 +53,7 @@ This repository is a **standalone skill knowledge base** for:
 
 > [View full changelog →](CHANGELOG.md)
 
-## Two-Phase Adaptation
+## Two-Phase Adaptation (+ Phase 3 Preview)
 
 ### Phase 1: SDK Build Adaptation (Before 2026-04-28)
 
@@ -66,6 +73,18 @@ This repository is a **standalone skill knowledge base** for:
 - Remove `UIDesignRequiresCompatibility` flag
 - Verify all UI components under Liquid Glass
 - Adjust custom UI for visual harmony
+
+### Phase 3 Preview: iOS 27 Mandates (Confirmed at WWDC26)
+
+**Goal**: Be ready before the iOS 27 SDK build mandate (~2027-04 est.)
+
+**Key Requirements** (details in [docs/ios27-preview.md](docs/ios27-preview.md)):
+- UIScene lifecycle mandatory — apps built with iOS 27 SDK without it **fail to launch**
+- Launch screen mandatory — missing keys cause App Store rejection
+- `canOpenURL` deprecated; `LSApplicationQueriesSchemes` limit halved to 25
+- `-ld_classic` linker removed in Xcode 27
+
+> Completing Phase 1 SceneDelegate migration already satisfies the biggest iOS 27 requirement.
 
 ## How to Use
 
@@ -107,31 +126,28 @@ ios26-adaptation-skill/
 │
 ├── docs/                  # 📚 Documentation
 │   ├── faq.md             # Frequently asked questions
-│   └── testing-guide.md   # Testing guide
+│   ├── testing-guide.md   # Testing guide
+│   ├── sdk-compatibility.md # Third-party SDK compatibility sheet
+│   └── ios27-preview.md   # iOS 27 / Xcode 27 adaptation preview (Phase 3)
 │
 ├── .claude/               # 🎯 Claude-specific guides
 │   └── iOS26-适配框架指南.md
 │
 ├── examples/              # ✅ Checklists
-│   ├── phase1-checklist.md
-│   ├── phase1-checklist.zh.md
-│   ├── phase2-checklist.md
-│   └── phase2-checklist.zh.md
+│   ├── phase1-checklist.md / .zh.md
+│   ├── phase2-checklist.md / .zh.md
+│   └── phase3-checklist.md / .zh.md
 │
 ├── scripts/               # 🔍 Scanning scripts
-│   └── ios26-scanner.py   # Deprecated API scanner
+│   ├── ios26-scanner.py   # Deprecated API scanner (40+ rules)
+│   └── test_scanner.py    # Scanner unit tests
 │
 └── templates/             # 📋 Code templates (reference only, not compiled)
-    ├── swift/             # Swift templates
-    │   ├── UIApplication+MainWindow.swift
-    │   ├── SceneDelegate.swift
-    │   ├── AppDelegate+Setup.swift
-    │   └── UNNotificationOptions+Adapter.swift
-    └── objc/              # Objective-C templates
-        ├── UIApplication+MainWindow.h/.m
-        ├── SceneDelegate.h/.m
-        ├── AppDelegate+Setup.h/.m
-        └── UNNotificationOptionsAdapter.h/.m
+    ├── PrivacyInfo.xcprivacy  # Privacy Manifest template
+    ├── swift/             # Swift templates (window access, SceneDelegate,
+    │                      #   Swift 6 concurrency, Liquid Glass adapters, ...)
+    ├── objc/              # Objective-C templates (same coverage)
+    └── mixed/             # Bridging patterns for mixed projects
 ```
 
 ## Core Content Overview
@@ -148,12 +164,14 @@ ios26-adaptation-skill/
 ### Scanning Script
 
 ```bash
-# Scan main project for deprecated APIs
+# Scan main project for deprecated APIs (40+ rules: iOS 26 + iOS 27 forward-looking)
 python3 scripts/ios26-scanner.py /path/to/your/ios/project
 
 # Output JSON report
 python3 scripts/ios26-scanner.py /path/to/your/ios/project --format json --output report.json
 ```
+
+Coverage includes: window access (`keyWindow` / `windows` / `statusBarFrame`), SceneDelegate architecture, notification options, iOS 26 runtime pitfalls (`tabBar` KVC crash, `navigationBar addSubview`), and iOS 27 forward-looking checks (`canOpenURL`, `-ld_classic`, `LSApplicationQueriesSchemes` limit, ODR, MetricKit). Full rule reference in [SKILL.md](SKILL.md).
 
 ### AI Skill Documents
 
@@ -177,6 +195,8 @@ python3 scripts/ios26-scanner.py /path/to/your/ios/project --format json --outpu
 - [Apple Developer News](https://developer.apple.com/news/)
 - [iOS 26 Release Notes](https://developer.apple.com/documentation/ios-release-notes)
 - [Liquid Glass Design Guide](https://developer.apple.com/design/)
+- [Upcoming App Store Requirements](https://developer.apple.com/news/upcoming-requirements/)
+- [Transitioning to the UIKit scene-based life cycle](https://developer.apple.com/documentation/uikit/transitioning-to-the-uikit-scene-based-life-cycle)
 
 ## License
 

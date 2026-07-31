@@ -13,6 +13,17 @@ description: iOS 26 adaptation expert. Guides through SDK build adaptation and L
 |------|-------------|-------|
 | **2026-04-28** | Must build with iOS 26 SDK | Phase 1 |
 | **~2026-09** | Liquid Glass mandatory, `UIDesignRequiresCompatibility` removed | Phase 2 |
+| **~2027-04 (est.)** | iOS 27 SDK build mandate — UIScene lifecycle **required or app fails to launch** | Phase 3 (preview) |
+
+### iOS 27 Confirmed at WWDC26 (2026-06)
+
+Apple has already confirmed the next wave of mandates. Full details in [docs/ios27-preview.md](docs/ios27-preview.md):
+
+- **UIScene lifecycle mandatory**: apps built with the iOS 27 SDK without scene-based lifecycle **fail to launch** (not a warning). The Phase 1 SceneDelegate migration in this skill directly satisfies this requirement.
+- **Launch screen mandatory**: Info.plist must contain one of `UILaunchStoryboardName` / `UILaunchStoryboards` / `UILaunchScreen` / `UILaunchScreens`, or App Store **rejects** the submission.
+- **`canOpenURL` deprecated** + `LSApplicationQueriesSchemes` limit halved from 50 to **25 entries**.
+- **`-ld_classic` linker removed** in Xcode 27 — leftover flags cause build failures.
+- **On Demand Resources** (`NSBundleResourceRequest`) and **`MXMetricManager`** deprecated.
 
 ### Common Misconceptions
 
@@ -113,6 +124,8 @@ Build with iOS 26 SDK, maintain existing UI appearance
 | `UNNotificationPresentationOptionAlert` | `Banner \| List` (iOS 14.0+) | Warning |
 | `UNAuthorizationOptionAlert` | Still valid — do NOT replace | — |
 | `UIScreen.main` | `UIWindowScene.screen` (iOS 13+) | Warning |
+| `UIApplication.shared.windows` | `UIWindowScene.windows` (iOS 15+ deprecation) | Warning |
+| `statusBarFrame` | `UIWindowScene.statusBarManager.statusBarFrame` | Warning |
 
 #### 3. SceneDelegate Architecture
 
@@ -178,9 +191,20 @@ Production-ready templates for each are in `templates/swift/`, `templates/objc/`
 
 ##### Swift Projects
 
+> **Pure Swift Project Notes (iOS 26+)**
+>
+> For Swift-only projects (no Objective-C files), the adaptation is simpler:
+> - Use `static let shared` instead of `@objc static let shared` or `sharedInstance`
+> - No `@objc` annotations needed on SceneDelegate or AppDelegate
+> - No bridging header concerns
+> - Add `@MainActor` to UIApplication extensions and SceneDelegate for Swift 6 compatibility
+> - If your deployment target is iOS 13+ and you don't yet have SceneDelegate, the app will still compile (backward compatibility), but iOS 27 will mandate SceneDelegate. Plan the migration now.
+>
+> Templates: `templates/swift/SceneDelegate+SwiftOnly.swift`, `templates/swift/AppDelegate+SwiftOnly.swift`
+
 Below is a minimal but complete example for a typical Swift iOS app supporting iOS 12+.
 
-**UIApplication+Extension.swift**
+**UIApplication+MainWindow.swift**
 ```swift
 import UIKit
 
@@ -660,6 +684,19 @@ Identify every custom component that touches system chrome or may clash with the
 | Backgrounds | Full-screen gradients, solid color backgrounds | Clash with glass refraction behind system bars |
 | Controls | Custom buttons/switches/sliders placed next to system ones | Visual harmony, size mismatch, color drift |
 
+##### 2a. iOS 26 Runtime Pitfalls (Field Reports)
+
+Confirmed pitfalls from production adaptation reports — these bite regardless of the compatibility flag:
+
+| Pitfall | Symptom | Fix |
+|---------|---------|-----|
+| Private KVC `setValue:forKey:@"tabBar"` | iOS 26 adds runtime protection: **crash** or an extra tab appears; custom TabBar silently fails | Use `UITabBarAppearance` for styling, or a custom container controller (scanner rule TABBAR-001) |
+| `[navigationBar addSubview:]` | Subview is swallowed by the new compositing layer structure — disappears after push/pop | Add the view to `navigationController.view` or use `navigationItem.titleView` (scanner rule NAVBAR-001) |
+| `AlwaysOriginal` image bar buttons | Button image still renders with blue `tintColor` on iOS 26 | Set `item.tintColor = .clear`, or switch to a `customView` UIButton |
+| `rightBarButtonItems` order | Display order is **reversed** compared to iOS 25 and earlier | Branch with `#available(iOS 26, *)` or use the PlatterView fix below (scanner rule BARBUTTON-001) |
+| `statusBarManager.statusBarFrame` returns 0 | Frame reads 0 at certain lifecycle moments on iOS 26 | Base layout on `safeAreaLayoutGuide` instead of status-bar frame math |
+| `tabBar.isTranslucent = false` | Conflicts with Liquid Glass translucency | Wrap in `if #unavailable(iOS 26)` |
+
 #### 3. Fix Navigation Bar Issues
 
 Common problems after removing `UIDesignRequiresCompatibility`:
@@ -899,6 +936,8 @@ if (@available(iOS 26.0, *)) {
 | WINDOW-004 | `AppDelegate.*window` | Warning |
 | WINDOW-005 | `.window.rootViewController` | Warning |
 | WINDOW-006 | `.window.visibleViewController` | Warning |
+| WINDOW-007 | `UIApplication.shared.windows` (Swift) | Warning |
+| WINDOW-008 | `[UIApplication sharedApplication].windows` (Objective-C) | Warning |
 
 ### Notification Patterns
 
@@ -943,7 +982,9 @@ if (@available(iOS 26.0, *)) {
 | Rule ID | Pattern | Severity |
 |---------|---------|----------|
 | STATUS-001 | `statusBarStyle = UIStatusBarStyle` | Warning |
-| STATUS-002 | `UIApplication.shared.*statusBarStyle` | Warning |
+| STATUS-002 | `UIApplication.shared.*statusBarStyle` (Swift) | Warning |
+| STATUS-003 | `[UIApplication sharedApplication].*statusBarStyle` (Objective-C) | Warning |
+| STATUS-004 | `statusBarFrame` (excluding `statusBarManager.statusBarFrame`) | Warning |
 
 ### StoreKit Patterns
 
@@ -971,6 +1012,14 @@ if (@available(iOS 26.0, *)) {
 |---------|---------|----------|
 | PHOTOS-001 | `UIImagePickerController` | Warning |
 
+### AssetsLibrary Patterns (Removed Framework)
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| ASSETSLIBRARY-001 | `import AssetsLibrary` (Swift) | Error |
+| ASSETSLIBRARY-002 | `#import <AssetsLibrary/AssetsLibrary.h>` / `@import AssetsLibrary` (Objective-C) | Error |
+| ASSETSLIBRARY-003 | `ALAssetsLibrary` usage | Error |
+
 ### Keyboard Patterns (Liquid Glass)
 
 | Rule ID | Pattern | Severity |
@@ -978,6 +1027,38 @@ if (@available(iOS 26.0, *)) {
 | KEYBOARD-001 | Custom `UITextField` subclass | Info |
 | KEYBOARD-002 | Custom `UITextView` subclass | Info |
 | KEYBOARD-003 | `inputAccessoryView` assignment | Info |
+
+### iOS 26 Runtime Pitfall Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| TABBAR-001 | `setValue:forKey:@"tabBar"` private KVC override (crashes on iOS 26) | Error |
+| NAVBAR-001 | `navigationBar.addSubview` / `[navigationBar addSubview:]` | Warning |
+| BARBUTTON-001 | `rightBarButtonItems =` assignment (order reversed on iOS 26) | Info |
+
+### iOS 27 Forward-Looking Patterns
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| OPENURL-001 | `canOpenURL` (deprecated at iOS 27; migrate to attempt-and-handle) | Info |
+| ODR-001 | `NSBundleResourceRequest` (On Demand Resources deprecated in iOS 27) | Warning |
+| METRICKIT-001 | `MXMetricManager` (replaced by `MetricManager` in iOS 27) | Warning |
+
+### Project-Level Checks
+
+These rules are evaluated per project (not per line):
+
+| Rule ID | Check | Severity |
+|---------|-------|----------|
+| PRIVACY-001 | Missing `PrivacyInfo.xcprivacy` Privacy Manifest | Error |
+| ARCH-001 | Missing SceneDelegate file | Error* |
+| ARCH-002 | Missing `UIApplicationSceneManifest` in Info.plist | Error* |
+| ARCH-003 | AppDelegate missing `sharedInstance` / `static let shared` | Warning |
+| PHASE2-001 | `UIDesignRequiresCompatibility` present — Phase 2 pending reminder | Info |
+| LINKER-001 | `-ld_classic` in `.xcconfig` / `.pbxproj` (removed in Xcode 27) | Warning |
+| OPENURL-002 | `LSApplicationQueriesSchemes` > 25 entries (iOS 27 limit) | Warning |
+
+> *ARCH-001/002 are downgraded to Warning for pure Swift projects with deployment target iOS 13+ (backward compatibility still works, but iOS 27 will require SceneDelegate).
 
 ---
 
@@ -1287,13 +1368,19 @@ Benefits of PHPicker:
 - [FAQ](../docs/faq.md) — Common questions about deadlines, build errors, and Liquid Glass
 - [Testing Guide](../docs/testing-guide.md) — Complete testing framework for QA teams
 - [SDK Compatibility Cheat Sheet](../docs/sdk-compatibility.md) — Third-party SDK iOS 26 compatibility status
+- [iOS 27 / Xcode 27 Preview](../docs/ios27-preview.md) — Confirmed iOS 27 mandates (UIScene enforcement, launch screen requirement, canOpenURL deprecation, build-chain changes)
 - [Chinese Framework Guide](../.claude/iOS26-适配框架指南.md) — Full adaptation framework in Chinese
 
 ### External Links
 - [Apple Developer News](https://developer.apple.com/news/)
+- [Upcoming Requirements — Apple Developer](https://developer.apple.com/news/upcoming-requirements/) — authoritative source for deadlines
 - [iOS 26 Release Notes](https://developer.apple.com/documentation/ios-release-notes)
 - [SceneDelegate Documentation](https://developer.apple.com/documentation/uikit/app_and_environment/scenes)
+- [Transitioning to the UIKit scene-based life cycle](https://developer.apple.com/documentation/UIKit/transitioning-to-the-uikit-scene-based-life-cycle) — the iOS 27 UIScene mandate
 - [Liquid Glass Design](https://developer.apple.com/design/)
+- [conorluddy/LiquidGlassReference](https://github.com/conorluddy/LiquidGlassReference) — open-source iOS 26 Liquid Glass reference (Swift/SwiftUI)
+- [Grow's Liquid Glass adaptation write-up (fatbobman)](https://fatbobman.com/zh/posts/grow-on-ios26/) — production UIKit + SwiftUI hybrid case study
+- [iOS 26 field pitfall report (cnblogs weicy)](https://www.cnblogs.com/weicyNo-1/p/19157486) — tabBar KVC crash, navigationBar addSubview, tintColor issues
 
 ---
 

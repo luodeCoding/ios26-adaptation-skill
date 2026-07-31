@@ -6,6 +6,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-07-30
+
+### Added
+- **New checklists `examples/phase3-checklist.md` / `.zh.md`** — iOS 27 readiness checklist (Phase 3 preview): UIScene mandate, launch screen keys, `canOpenURL` migration, linker/build-chain checks, layout modernization, with matching scanner rule IDs
+- **Phase 2 checklists (EN/ZH)**: added iOS 26 runtime pitfall items — no `tabBar` private KVC, no direct `navigationBar addSubview`, `AlwaysOriginal` tinting, no `statusBarFrame`-based layout
+- **Testing guide (`docs/testing-guide.md`)**: added iOS 26 pitfall test cases (custom TabBar crash, nav bar overlay views, right bar button order, image button tinting) and a Phase 3 forward-looking test section
+
+### Fixed
+- **README.md / README.zh.md**: synced from stale v1.6.0 state — version badge, v1.7-v1.9 changelog rows, iOS 27 deadline row, Phase 3 preview section, current project structure (mixed templates, docs, phase 3 checklists, test suite), scanner coverage summary, resource links
+- **INTEGRATION.md**: file-purpose table and scanner coverage list updated to the actual v1.9 rule set (was still listing only the 6 original checks)
+
+## [1.9.0] - 2026-07-30
+
+### Added
+- **New doc `docs/ios27-preview.md`** — iOS 27 / Xcode 27 adaptation preview (Phase 3), based on WWDC26 Session 278 + Apple docs and community field reports. Covers mandatory UIScene lifecycle (apps fail to launch without it), mandatory launch screen, `canOpenURL` deprecation + `LSApplicationQueriesSchemes` 50→25 limit, build-chain removals (`-ld_classic`, Clang module de-dup, ODR, MetricKit), layout `resize` changes, and a three-phase timeline.
+- **New scanner rules (`scripts/ios26-scanner.py`)**
+  - iOS 26 runtime pitfalls (field reports): `TABBAR-001` (private KVC `setValue:forKey:@"tabBar"` crash, Error), `NAVBAR-001` (direct `navigationBar addSubview`, Warning), `BARBUTTON-001` (`rightBarButtonItems` order/spacing, Info)
+  - iOS 27 forward-looking: `OPENURL-001` (`canOpenURL` deprecation, Info), `ODR-001` (`NSBundleResourceRequest`, Warning), `METRICKIT-001` (`MXMetricManager`, Warning)
+  - Project-level: `LINKER-001` (`-ld_classic` in `.xcconfig`/`.pbxproj`, Warning), `OPENURL-002` (`LSApplicationQueriesSchemes` over the 25-entry limit, Warning)
+  - Comment-only line filtering extended to the new behavior rules to avoid false positives
+- **SKILL.md**: added iOS 27 deadline row + "iOS 27 Confirmed at WWDC26" section, a Phase 2 "iOS 26 Runtime Pitfalls (Field Reports)" table, three new Scanner Rules Reference tables, and internal/external resource links (conorluddy/LiquidGlassReference, fatbobman, cnblogs weicy)
+- **FAQ**: added Q25b-Q25e (iOS 26 runtime pitfalls: tabBar KVC crash, navigationBar addSubview, AlwaysOriginal tint, statusBarFrame 0) and a new "iOS 27 Preview" section Q36-Q39 (UIScene mandate, launch screen, `canOpenURL` migration, build-chain changes)
+- **AGENTS.md**: added iOS 27 forward-looking trigger keywords
+- **Tests**: 12 new unit tests covering the new code-level and project-level rules (47 total, all passing)
+
+## [1.8.0] - 2026-07-30
+
+### Added
+- **New scanner rules (`scripts/ios26-scanner.py`)**
+  - `WINDOW-007/008` — detects deprecated `UIApplication.shared.windows` / `[UIApplication sharedApplication].windows` (deprecated since iOS 15)
+  - `STATUS-004` — detects deprecated `statusBarFrame` access (skips the modern `statusBarManager.statusBarFrame` replacement)
+  - `PHASE2-001` — project-level reminder when `UIDesignRequiresCompatibility` is present in Info.plist (Phase 2 pending before Xcode 27)
+  - Deployment target detection now falls back to parsing `IPHONEOS_DEPLOYMENT_TARGET` from `.pbxproj` when no Podfile declares it (uses the lowest value found)
+- **SKILL.md**: Scanner Rules Reference synced with the actual rule set — added `WINDOW-007/008`, `STATUS-003/004`, `ASSETSLIBRARY-001/002/003`, and a new "Project-Level Checks" table (`PRIVACY-001`, `ARCH-001/002/003`, `PHASE2-001`)
+- **FAQ**: added Q19a (`UIApplication.shared.windows` / `statusBarFrame` deprecations)
+- **Tests**: 8 new unit tests covering the new rules, `.pbxproj` deployment target parsing, and false-positive filters (35 total)
+
+### Fixed
+- **Scanner crash**: `TypeError` when scanning a pure Swift project with no Podfile/pbxproj deployment target (`None >= 13.0` comparison in architecture severity logic)
+- **Scanner false positive**: `WINDOW-003` skip filter only matched the legacy `UIApplication+Extension` filename — now also matches the actual `UIApplication+MainWindow` template name
+- **FAQ duplicate question numbers**: two Q25 entries and reused Q19-Q23 in Testing/Strategy sections — renumbered to Q25a and Q31-Q35
+- **FAQ broken template references**: `templates/*/UIApplication+Extension.*` corrected to the actual `UIApplication+MainWindow.*` filenames
+- **SKILL.md**: Swift example heading renamed from `UIApplication+Extension.swift` to `UIApplication+MainWindow.swift` to match the shipped template
+- **CHANGELOG.zh.md**: backfilled the missing 1.7.0 entry
+
+## [1.7.0] - 2026-06-02
+
+### Added
+- **Pure Swift project adaptation support**
+  - `templates/swift/SceneDelegate+SwiftOnly.swift` — simplified SceneDelegate without @objc annotations, with @MainActor for Swift 6
+  - `templates/swift/AppDelegate+SwiftOnly.swift` — pure Swift AppDelegate using `static let shared` instead of `@objc static let shared` / `sharedInstance`
+  - Updated `templates/swift/UIApplication+MainWindow.swift` with `@MainActor` and cross-language usage comments
+- **Scanner improvements (`scripts/ios26-scanner.py`)**
+  - `ASSETSLIBRARY-001/002/003` — detects `import AssetsLibrary`, `#import <AssetsLibrary/AssetsLibrary.h>`, and `ALAssetsLibrary` usage (Error severity)
+  - `detect_project_type()` — auto-detects pure Swift / mixed / Objective-C projects and deployment target
+  - ARCH-001/002 severity now adapts to project type: pure Swift iOS 13+ projects without SceneDelegate are downgraded from Error to Warning (backward compatibility still works, but iOS 27 will require migration)
+  - SCREEN-001/002 false-positive filtering: skips `Pods/`, `Vender/`, `vendor/`, `ThirdParty/` directories
+  - ARCH-003 suggestion updated to mention `static let shared` for Swift projects
+- **Documentation updates**
+  - SKILL.md: added "Pure Swift Project Notes (iOS 26+)" section under Swift Projects
+  - FAQ: added Q5a (pure Swift SceneDelegate migration), Q14a (ALAssetsLibrary build error)
+
 ## [1.6.0] - 2026-05-12
 
 ### Added

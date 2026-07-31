@@ -6,6 +6,68 @@
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-07-30
+
+### 新增
+- **新增检查清单 `examples/phase3-checklist.md` / `.zh.md`** — iOS 27 准备检查清单（第三阶段前瞻）：UIScene 强制、启动屏四键、`canOpenURL` 迁移、链接器/构建链检查、布局现代化，并标注对应扫描规则 ID
+- **第二阶段检查清单（中英）**：新增 iOS 26 运行时坑检查项 — 无 `tabBar` 私有 KVC、无直接 `navigationBar addSubview`、`AlwaysOriginal` 着色、布局不依赖 `statusBarFrame`
+- **测试指南 (`docs/testing-guide.md`)**：新增 iOS 26 实战坑测试用例（自定义 TabBar 闪退、导航栏叠加视图、右侧按钮顺序、图片按钮着色）及第三阶段前瞻测试章节
+
+### 修复
+- **README.md / README.zh.md**：从滞后的 v1.6.0 状态同步 — 版本号、v1.7-v1.9 更新日志行、iOS 27 截止日期行、第三阶段前瞻章节、当前项目结构（混编模板、docs 新文档、第三阶段清单、测试套件）、扫描器覆盖范围概述、资源链接
+- **INTEGRATION.md**：文件用途表与扫描内容列表更新为实际的 v1.9 规则集（此前仅列出最初的 6 项检查）
+
+## [1.9.0] - 2026-07-30
+
+### 新增
+- **新增文档 `docs/ios27-preview.md`** — iOS 27 / Xcode 27 适配前瞻（第三阶段），依据 WWDC26 Session 278 + Apple 官方文档及社区实战反馈整理。涵盖 UIScene 生命周期强制（未迁移直接 fail to launch）、启动屏强制、`canOpenURL` 弃用 + `LSApplicationQueriesSchemes` 上限 50→25、构建链移除项（`-ld_classic`、Clang module 去重、ODR、MetricKit）、布局 `resize` 变化，以及三阶段时间线。
+- **扫描器新规则 (`scripts/ios26-scanner.py`)**
+  - iOS 26 运行时实战坑：`TABBAR-001`（私有 KVC `setValue:forKey:@"tabBar"` 闪退，Error）、`NAVBAR-001`（直接 `navigationBar addSubview`，Warning）、`BARBUTTON-001`（`rightBarButtonItems` 顺序/间距，Info）
+  - iOS 27 前瞻：`OPENURL-001`（`canOpenURL` 弃用，Info）、`ODR-001`（`NSBundleResourceRequest`，Warning）、`METRICKIT-001`（`MXMetricManager`，Warning）
+  - 项目级：`LINKER-001`（`.xcconfig`/`.pbxproj` 中的 `-ld_classic`，Warning）、`OPENURL-002`（`LSApplicationQueriesSchemes` 超过 25 条上限，Warning）
+  - 注释行过滤扩展到新的行为类规则，避免误报
+- **SKILL.md**：新增 iOS 27 截止日期行 +“iOS 27 已在 WWDC26 确认”小节、第二阶段“iOS 26 运行时实战坑”表、三张新的扫描规则参考表，以及内部/外部资源链接（conorluddy/LiquidGlassReference、fatbobman、博客园 weicy）
+- **FAQ**：新增 Q25b-Q25e（iOS 26 运行时坑：tabBar KVC 闪退、navigationBar addSubview、AlwaysOriginal 蓝色 tint、statusBarFrame 为 0），以及全新“iOS 27 前瞻”章节 Q36-Q39（UIScene 强制、启动屏、`canOpenURL` 迁移、构建链变更）
+- **AGENTS.md**：新增 iOS 27 前瞻触发词
+- **测试**：新增 12 个单元测试，覆盖新增的代码级与项目级规则（共 47 个，全部通过）
+
+## [1.8.0] - 2026-07-30
+
+### 新增
+- **扫描器新规则 (`scripts/ios26-scanner.py`)**
+  - `WINDOW-007/008` — 检测已弃用的 `UIApplication.shared.windows` / `[UIApplication sharedApplication].windows`（iOS 15 起弃用）
+  - `STATUS-004` — 检测已弃用的 `statusBarFrame` 访问（自动跳过现代替代写法 `statusBarManager.statusBarFrame`）
+  - `PHASE2-001` — 项目级提醒：Info.plist 中存在 `UIDesignRequiresCompatibility` 时提示第二阶段待办（Xcode 27 前必须完成）
+  - 部署目标检测新增 `.pbxproj` 回退：无 Podfile 声明时解析 `IPHONEOS_DEPLOYMENT_TARGET`（取最低值）
+- **SKILL.md**：扫描规则参考与实际规则集同步 — 补充 `WINDOW-007/008`、`STATUS-003/004`、`ASSETSLIBRARY-001/002/003`，并新增“项目级检查”表（`PRIVACY-001`、`ARCH-001/002/003`、`PHASE2-001`）
+- **FAQ**：新增 Q19a（`UIApplication.shared.windows` / `statusBarFrame` 弃用说明）
+- **测试**：新增 8 个单元测试，覆盖新规则、`.pbxproj` 部署目标解析和误报过滤（共 35 个）
+
+### 修复
+- **扫描器崩溃**：纯 Swift 项目无 Podfile/pbxproj 部署目标时，架构严重级判断中 `None >= 13.0` 比较导致 `TypeError`
+- **扫描器误报**：`WINDOW-003` 跳过过滤器仅匹配旧的 `UIApplication+Extension` 文件名 — 现已同时匹配实际模板名 `UIApplication+MainWindow`
+- **FAQ 编号重复**：两个 Q25、测试/策略章节重复使用 Q19-Q23 — 重新编号为 Q25a 和 Q31-Q35
+- **FAQ 模板路径错误**：`templates/*/UIApplication+Extension.*` 修正为实际的 `UIApplication+MainWindow.*` 文件名
+- **SKILL.md**：Swift 示例标题由 `UIApplication+Extension.swift` 改为 `UIApplication+MainWindow.swift`，与实际模板一致
+- **CHANGELOG.zh.md**：补齐缺失的 1.7.0 版本记录
+
+## [1.7.0] - 2026-06-02
+
+### 新增
+- **纯 Swift 项目适配支持**
+  - `templates/swift/SceneDelegate+SwiftOnly.swift` — 简化版 SceneDelegate，无 @objc 注解，带 @MainActor 适配 Swift 6
+  - `templates/swift/AppDelegate+SwiftOnly.swift` — 纯 Swift AppDelegate，使用 `static let shared` 替代 `@objc static let shared` / `sharedInstance`
+  - 更新 `templates/swift/UIApplication+MainWindow.swift`，增加 `@MainActor` 和跨语言使用注释
+- **扫描器改进 (`scripts/ios26-scanner.py`)**
+  - `ASSETSLIBRARY-001/002/003` — 检测 `import AssetsLibrary`、`#import <AssetsLibrary/AssetsLibrary.h>` 和 `ALAssetsLibrary` 使用（Error 级别）
+  - `detect_project_type()` — 自动检测纯 Swift / 混合 / Objective-C 项目及部署目标
+  - ARCH-001/002 严重级根据项目类型自适应：纯 Swift iOS 13+ 项目无 SceneDelegate 时从 Error 降级为 Warning（向后兼容仍可用，但 iOS 27 将强制迁移）
+  - SCREEN-001/002 误报过滤：跳过 `Pods/`、`Vender/`、`vendor/`、`ThirdParty/` 目录
+  - ARCH-003 建议文案更新，针对 Swift 项目提及 `static let shared`
+- **文档更新**
+  - SKILL.md：Swift Projects 章节新增“Pure Swift Project Notes (iOS 26+)”
+  - FAQ：新增 Q5a（纯 Swift SceneDelegate 迁移）、Q14a（ALAssetsLibrary 编译错误）
+
 ## [1.6.0] - 2026-05-12
 
 ### 新增

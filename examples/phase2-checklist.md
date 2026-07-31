@@ -40,6 +40,8 @@
 - [ ] **Right bar button items**: verified spacing and ordering under Liquid Glass (use `UINavigationBar+LiquidGlassAdapter` if needed)
 - [ ] **Left bar button items**: decided whether to apply PlatterView fix or leave system back button as-is
 - [ ] Tested multiple `rightBarButtonItems` — confirmed order matches pre-iOS 26 expectation
+- [ ] **Navigation bar overlay views**: confirmed no views are added directly via `navigationBar addSubview` (swallowed by the iOS 26 compositing layer — use `navigationController.view` or `titleView` instead; scanner rule `NAVBAR-001`)
+- [ ] **Image button tinting**: `AlwaysOriginal` rendering-mode buttons are not overridden by the blue tintColor (set `tintColor = .clear` or use a customView if needed)
 
 ### TabBar
 - [ ] Reviewed TabBar custom styling
@@ -47,6 +49,8 @@
 - [ ] Checked selected/unselected states
 - [ ] Tested TabBar in different themes
 - [ ] Verified TabBar transparency
+- [ ] **Custom TabBar**: confirmed no private KVC `setValue:forKey:@"tabBar"` (crashes on iOS 26 — scanner rule `TABBAR-001`; use `UITabBarAppearance` for styling, container controller for full customization)
+- [ ] **Status bar layout**: confirmed layout does not depend on `statusBarFrame` (returns 0 at certain moments on iOS 26 — use `safeAreaLayoutGuide`)
 
 ### Keyboard
 - [ ] Checked all text input fields

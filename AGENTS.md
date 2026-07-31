@@ -25,6 +25,16 @@ Trigger this skill when the user mentions any of the following:
 - April 28, 2026 deadline
 - `UNNotificationPresentationOptionAlert` warnings
 
+**iOS 27 forward-looking triggers** (confirmed at WWDC26, see `docs/ios27-preview.md`):
+
+- iOS 27 / Xcode 27 adaptation or SDK build mandate
+- UIScene lifecycle mandatory / app fails to launch without SceneDelegate
+- Launch screen requirement / App Store rejection for missing launch screen
+- `canOpenURL` deprecation / `LSApplicationQueriesSchemes` 25-entry limit
+- `-ld_classic` linker removal / Clang module de-duplication build failures
+- On Demand Resources / `NSBundleResourceRequest` / `MXMetricManager` deprecations
+- iOS 26 runtime crashes: `setValue:forKey:@"tabBar"`, `navigationBar addSubview` disappearing
+
 ## Standard Workflow
 
 When assisting with iOS 26 adaptation, **always follow this flow**:
