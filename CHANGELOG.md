@@ -6,6 +6,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-08-03
+
+### Added — Zero-Omission Adaptation Engine
+- **Coverage Ledger** `scripts/adaptation-ledger.json` — 50 adaptation items (Phase 1 ×20, Phase 2 ×10, Phase 3 ×12, environment ×3, ship gates ×5) as the single complete task list; each item binds a detection method (`auto`/`manual`/`test`), rule IDs, verification criteria, and an Apple-official source
+- **New scanner project-level rules**:
+  - `LAUNCH-001/002/003` — iOS 27 launch screen mandate (four Info.plist keys; `UILaunchImages` flagged as insufficient; generated-Info.plist projects verified via `INFOPLIST_KEY_UILaunch*` build settings)
+  - `ARCH-004` — generated Info.plist detection (`GENERATE_INFOPLIST_FILE = YES`)
+  - `EXT-001` — app extension target detection (each extension must build with the new SDK)
+  - `SDK-001/002` — third-party dependency manifest audit against `docs/sdk-compatibility.md`
+- **Scan report additions**: Manual Audit Checklist (items that cannot be statically detected) and Completion Gate (SHIP-01~05, the ship-ready Definition of Done); JSON output gains a `completion_gate` field
+- **Coverage matrix docs** `docs/coverage.md` / `docs/coverage.zh.md` — human-readable mirror of the ledger with per-phase tables
+- **CI consistency tests**: every `auto` ledger item's rule IDs must exist in the scanner; phase coverage validated (58 tests total)
+
+### Changed
+- `SKILL.md`: new mandatory "Zero-Omission Adaptation Loop" workflow (ledger → scan → fix in ledger order → rescan → close gate) + Definition of Done; Resources index adds coverage matrix
+- `AGENTS.md`: standard workflow now requires loading the ledger and closing the SHIP gate before declaring ship-ready
+- `README.md` / `README.zh.md`: version v1.12.0, "Zero-Omission Guarantee" section, updated structure tree and doc tables
+- `LINKER-001` now also scans `Podfile` for `-ld_classic`
+
+## [1.11.0] - 2026-08-03
+
+### Added
+- **Distribution-ready release** — the repo can now be installed directly as an AI skill and safely applied to production projects
+- **Adaptation Impact Statement (low-impact promise)**: explicit boundaries of what the skill may and may not change in a user's main project
+  - `SKILL.md`: new "Adaptation Impact Boundaries (MANDATORY for AI agents)" section — allowed changes, forbidden changes, Apple-official compliance principle, auditable deliverable format
+  - `AGENTS.md`: new "Minimal-Impact Adaptation Rules (MANDATORY)" section + Phase 3 entry in the skill overview
+  - `INTEGRATION.md`: new user-facing "适配影响声明（低冲击承诺）" section
+  - `README.md` / `README.zh.md`: "Adaptation Impact Guarantee" highlights
+- **New timeline docs `docs/timeline.md` / `docs/timeline.zh.md`** — single authoritative reference for every iOS 26/27 milestone (2025-06 → ~2027-04) with the required adaptation scope, consequences of inaction, matching scanner rules, and checklist links per phase
+- **Skill installation guide**: one-command Claude Code install (`~/.claude/skills/`) and Qoder/other-agent guidance in README (EN/ZH) and the Juejin article
+- **`platforms/article.md`**: refreshed for promotion — iOS 27 deadline row, low-impact section, 40+ rule coverage, skill-install quick start
+
+### Changed
+- README (EN/ZH): version bumped to v1.11.0; structure tree and AI-skill-document tables include the new timeline docs
+
+## [1.10.0] - 2026-08-03
+
+### Added
+- **`docs/ios27-preview.md` major refresh (based on Aug-2026 research)**
+  - Xcode 27 environment requirements (macOS Tahoe 26.4+, Swift 6.4, Apple Silicon only, iOS 17+ device debugging, x86_64 removed from ARCHS_STANDARD)
+  - Three new code-level P1 risks: NSURL double-encoding fix, C++ `multimap/multiset::find()` semantics change, System framework `FilePath.stat()` name collision
+  - New section 6 "iOS 27 Beta known issues" table (Address Sanitizer, Core AI + Metal, Memory Tagging, MusicKit @State, legacy-app launch crash)
+  - TN3187 technote reference + real iOS 27.0 beta crash case for legacy AppDelegate-only apps (Tencent Cloud community)
+  - Beta progress update (iOS 27.0 beta 3 / public beta shipped; official release expected Sep 2026 with iPhone 18)
+- **FAQ**: added Q40 (Xcode 27 environment requirements & beta timeline), Q41 (code-level breaking-change audit checklist)
+- **SKILL.md**: iOS 27 section enriched with TN3187, code-level P1 changes, beta status; AGENTS.md gained matching triggers
+
+### Fixed
+- **SKILL.md**: Resources internal-doc links unified from `../docs/` to repo-root-relative `docs/` (broken links removed)
+- **README (EN/ZH)**: key-deadline table now marks 2026-04-28 as in effect and notes the closing Phase 2 window
+
+## [1.9.2] - 2026-08-03
+
+### Fixed
+- **README.md / README.zh.md**: added missing `INTEGRATION.md` references — new entry in the project structure tree, a pointer link in the "How to Use" section, and a row in the AI skill documents table
+- **README.zh.md**: the "this file" label in the project structure tree corrected from `README.md` to `README.zh.md`
+- **INTEGRATION.md**: file-purpose table now includes the missing root-level docs (README (EN/ZH), INTEGRATION, CHANGELOG)
+
 ## [1.9.1] - 2026-07-30
 
 ### Added

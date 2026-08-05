@@ -11,6 +11,12 @@ This is a **Claude Code skill** for guiding iOS developers through the mandatory
 - **Phase 2**: Liquid Glass full adaptation (deadline: before Xcode 27 ~2026-09)
   - Remove compatibility flag
   - Verify UI harmony with the new glassmorphism design language
+- **Phase 3** (preview): iOS 27 mandates confirmed at WWDC26 (deadline: ~2027-04 est.)
+  - UIScene lifecycle mandatory (app fails to launch without it), launch screen mandatory,
+    `canOpenURL` deprecation, `-ld_classic` removal — see `docs/ios27-preview.md`
+
+For the complete milestone-by-milestone timeline and per-phase scope, point users to
+`docs/timeline.md` / `docs/timeline.zh.md`.
 
 ## When to Use This Skill
 
@@ -34,6 +40,9 @@ Trigger this skill when the user mentions any of the following:
 - `-ld_classic` linker removal / Clang module de-duplication build failures
 - On Demand Resources / `NSBundleResourceRequest` / `MXMetricManager` deprecations
 - iOS 26 runtime crashes: `setValue:forKey:@"tabBar"`, `navigationBar addSubview` disappearing
+- TN3187 / scene-based lifecycle migration technote
+- iOS 27 code-level breaking changes: NSURL double-encoding fix, C++ `multimap/multiset::find()` semantics, `FilePath.stat()` name collision
+- Xcode 27 environment requirements (macOS Tahoe 26.4+, Apple Silicon only)
 
 ## Standard Workflow
 
@@ -45,6 +54,7 @@ When assisting with iOS 26 adaptation, **always follow this flow**:
 
 2. Scan Project
    ├── Use scripts/ios26-scanner.py (if available in user's project)
+   ├── ALWAYS load scripts/adaptation-ledger.json as the complete task list (never rely on memory)
    └── Or grep for: keyWindow, delegate.window, UNNotificationPresentationOptionAlert,
        UIApplicationSceneManifest, statusBarStyle, inputAccessoryView,
        subclass UITextField, subclass UITextView
@@ -67,12 +77,32 @@ When assisting with iOS 26 adaptation, **always follow this flow**:
    ├── Replace deprecated API calls globally
    └── Add Info.plist configurations
 
-6. Verify
+6. Verify (Zero-Omission Loop — see SKILL.md)
    ├── Build with iOS 26 SDK succeeds
    ├── Test on minimum supported iOS version
    ├── Test on iOS 13+ (SceneDelegate path)
-   └── Test on iOS 26 (Liquid Glass disabled/enabled depending on phase)
+   ├── Test on iOS 26 (Liquid Glass disabled/enabled depending on phase)
+   ├── Re-run scanner: every ledger item = fixed / verified-clean / not-applicable (with reason)
+   ├── Manual Audit Checklist in scan report fully ticked
+   └── Completion Gate SHIP-01~05 all green → only then declare ship-ready
 ```
+
+## Minimal-Impact Adaptation Rules (MANDATORY)
+
+This skill is applied directly inside users' production projects. Keep changes surgical:
+
+1. **Only modify iOS 26/27-related code** — scanner-flagged deprecated call sites, lifecycle
+   architecture (SceneDelegate / Info.plist scene manifest), and new adapter files from `templates/`.
+2. **Never change Deployment Target**, never remove pre-iOS 13 fallback paths, never refactor
+   or reformat unrelated business code.
+3. **Only fix what is mandated or Error-level** — do not "modernize while we're at it"
+   (no unprompted SwiftUI rewrites, Swift 6 strict-concurrency migrations, or StoreKit 2
+   rewrites when the project still builds).
+4. **Never patch `Pods/` or third-party SDK sources** — advise upgrading the dependency.
+5. **Every requirement must trace to an Apple official source** (Upcoming Requirements,
+   release notes, WWDC, TN3187). Never invent requirements.
+6. **Before editing**: present the scan summary plus the exact file add/modify list with
+   one-line reasons. **After editing**: re-run the scanner and report remaining findings.
 
 ## Output Format Preferences
 

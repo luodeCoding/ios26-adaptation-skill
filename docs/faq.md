@@ -1,6 +1,6 @@
 # iOS 26 Adaptation FAQ
 
-> **Last Updated:** 2026-07-30
+> **Last Updated:** 2026-08-03
 
 ---
 
@@ -502,11 +502,63 @@ Confirmed P0/P1 items:
 
 The scanner covers `-ld_classic` (`LINKER-001`), ODR (`ODR-001`), and MetricKit (`METRICKIT-001`) automatically.
 
+### Q40: What are the environment requirements for Xcode 27?
+
+Confirmed at WWDC26 (as of iOS 27.0 beta 3 / Xcode 27 beta 3, 2026-07):
+
+- Xcode 27 beta requires **macOS Tahoe 26.4+**, ships **Swift 6.4** and the iOS 27 SDK.
+- Xcode 27 runs on **Apple Silicon Macs only** — Intel Macs cannot install it.
+- Physical-device debugging requires **iOS 17+** devices; simulators still support older versions.
+- `ARCHS_STANDARD` for macOS 27.0+ targets no longer includes x86_64.
+- iOS 27 official release is expected in **September 2026** alongside iPhone 18; the public beta was already rolled out in mid-July 2026.
+
+### Q41: Besides the build chain, which code-level breaking changes should I audit before linking against the iOS 27 SDK?
+
+Three P1 behavior changes that won't be caught by the scanner:
+
+1. **NSURL double-encoding fix** — `+[NSURL URLWithString:]` no longer double-encodes `%` inside valid percent-escape sequences. Any workaround you wrote for the old behavior may now break URL parsing. Search and review your URL-encoding workarounds.
+2. **C++ standard library semantics** — `multimap/multiset::find()` no longer guarantees returning the *first* equivalent element; use `lower_bound`/`equal_range` instead. Also `bitset::operator[]` now returns `bool`. Matters mostly for projects with C++ layers (media, maps, game engines).
+3. **`stat()` name collision** — new `FilePath.stat()` / `FileDescriptor.stat()` instance methods in the System framework can clash with unqualified `stat()` calls in custom extensions, breaking compilation. Qualify with `Darwin.stat()` or migrate to the new Swift API.
+
+Also see the beta known-issues table (Address Sanitizer needs Xcode 26.5+, etc.) in [ios27-preview.md §6](./ios27-preview.md#6-ios-27-beta-已知问题截至-2026-07).
+
+---
+
+## Using This Skill (Impact & Installation)
+
+### Q42: If an AI applies this skill to my main project, will it touch my business code?
+
+**No — the skill is bound by an explicit low-impact promise** (see SKILL.md § Adaptation Impact Boundaries and INTEGRATION.md § 适配影响声明):
+
+- ✅ Only iOS 26/27-related code is changed: scanner-flagged deprecated call sites, SceneDelegate lifecycle architecture, Info.plist adaptation keys, and new adapter files from `templates/`
+- ✅ All version differences are wrapped in `#available` / `@available`; pre-iOS 13 fallback paths are preserved
+- ❌ Never touched: Deployment Target, business logic, unrelated files, third-party SDK sources (`Pods/`), and any “drive-by modernization”
+- ✅ Auditable flow: scan → file change list with reasons → apply only after confirmation → re-scan until Error-level findings are zero
+
+Every requirement traces back to Apple official sources (Upcoming Requirements, release notes, WWDC, TN3187) — nothing invented.
+
+### Q43: Where can I see every iOS 26/27 deadline and what each one requires?
+
+**[docs/timeline.md](./timeline.md)** ([中文](./timeline.zh.md)) is the single authoritative reference: six milestones from 2025-06 to ~2027-04, each with Apple's mandate, the required adaptation scope (itemized with scanner rule IDs), the consequence of inaction, and the matching checklist. Key nodes: **2026-04-28** (iOS 26 SDK builds, now in effect), **~2026-09** (Xcode 27, Liquid Glass mandatory), **~2027-04 est.** (iOS 27 SDK builds; apps without UIScene lifecycle fail to launch).
+
+### Q44: How do I install this repo as an AI skill?
+
+**Claude Code** (native SKILL.md format):
+
+```bash
+git clone https://github.com/luodeCoding/ios26-adaptation-skill.git ~/.claude/skills/ios26-adaptation
+```
+
+Then, inside your iOS project, just say "帮我适配 iOS 26" / "Help me adapt to iOS 26".
+
+**Qoder / other agent tools**: install the repo as a plugin/skill from its GitHub URL, or clone it anywhere and point the agent at the folder — `SKILL.md` + `AGENTS.md` contain everything the agent needs. No file from this repo ever enters your Xcode project or build.
+
 ---
 
 ## Related Documents
 
 - [SKILL.md](../SKILL.md) — Detailed adaptation strategy and implementation guides
+- [Timeline & Adaptation Scope (docs/timeline.md)](./timeline.md) — Every iOS 26/27 milestone and its required scope ([中文](./timeline.zh.md))
 - [Testing Guide (docs/testing-guide.md)](./testing-guide.md) — Complete testing framework for QA teams
 - [iOS 27 Preview (docs/ios27-preview.md)](./ios27-preview.md) — Confirmed iOS 27 / Xcode 27 mandates and migration paths
 - [templates/](../templates/) — Production-ready Swift and Objective-C code templates

@@ -19,11 +19,14 @@ description: iOS 26 adaptation expert. Guides through SDK build adaptation and L
 
 Apple has already confirmed the next wave of mandates. Full details in [docs/ios27-preview.md](docs/ios27-preview.md):
 
-- **UIScene lifecycle mandatory**: apps built with the iOS 27 SDK without scene-based lifecycle **fail to launch** (not a warning). The Phase 1 SceneDelegate migration in this skill directly satisfies this requirement.
+- **UIScene lifecycle mandatory**: apps built with the iOS 27 SDK without scene-based lifecycle **fail to launch** (not a warning). The Phase 1 SceneDelegate migration in this skill directly satisfies this requirement. Apple Technical Note **TN3187** is the authoritative migration reference; real crash cases already exist on iOS 27.0 beta for legacy AppDelegate-only apps.
 - **Launch screen mandatory**: Info.plist must contain one of `UILaunchStoryboardName` / `UILaunchStoryboards` / `UILaunchScreen` / `UILaunchScreens`, or App Store **rejects** the submission.
 - **`canOpenURL` deprecated** + `LSApplicationQueriesSchemes` limit halved from 50 to **25 entries**.
 - **`-ld_classic` linker removed** in Xcode 27 — leftover flags cause build failures.
 - **On Demand Resources** (`NSBundleResourceRequest`) and **`MXMetricManager`** deprecated.
+- **Code-level P1 changes** (not scanner-detectable): NSURL double-encoding fix, C++ `multimap/multiset::find()` semantics change, System framework `FilePath.stat()` name collision.
+
+> Status (2026-08): iOS 27.0 beta 3 / public beta already shipped; official release expected **September 2026**. Xcode 27 requires macOS Tahoe 26.4+, Apple Silicon only.
 
 ### Common Misconceptions
 
@@ -31,6 +34,79 @@ Apple has already confirmed the next wave of mandates. Full details in [docs/ios
 - ❌ **Users forced to iOS 26**: No, runtime requirement unchanged
 - ❌ **Existing apps removed**: No, only affects new submissions
 - ❌ **Grace period exists**: No, April 28 is a hard deadline
+
+---
+
+## Adaptation Impact Boundaries (MANDATORY for AI agents)
+
+This skill is designed for **minimal-impact, surgical adaptation**. When performing adaptation
+on a user's main project, you MUST obey the following boundaries so the project's existing
+behavior, architecture, and codebase stay intact:
+
+### ✅ What you MAY change (iOS 26/27 scope only)
+
+| Area | Allowed changes |
+|------|-----------------|
+| Deprecated API call sites | Replace only the flagged deprecated expressions (`keyWindow`, `delegate.window`, notification options, etc.) with their documented replacements |
+| Lifecycle architecture | Add SceneDelegate files, add `UIApplicationSceneManifest` to Info.plist, extract `setupApplication` / `setupSceneUI` from AppDelegate |
+| Info.plist | Add only adaptation-related keys (`UIApplicationSceneManifest`, `UIDesignRequiresCompatibility`, launch-screen keys) |
+| New adapter files | Add the extension/category/adapter files from `templates/` that the scan actually requires |
+| Version branches | Wrap behavioral differences in `#available` / `@available` checks, never delete old-version paths |
+
+### ❌ What you MUST NOT touch
+
+| Forbidden | Reason |
+|-----------|--------|
+| Changing **Deployment Target / minimum iOS version** | Not required by Apple; silently changes user reach |
+| Refactoring business logic, renaming symbols, reformatting unrelated files | Out of scope; creates noisy diffs and regression risk |
+| Removing the iOS 12 / pre-iOS 13 fallback paths | Legacy runtime support must keep working |
+| Replacing non-deprecated APIs "while we're at it" (e.g., SwiftUI modernization, StoreKit rewrites when the project still builds) | Only fix what blocks the iOS 26/27 mandate or what the scanner reports as Error |
+| Patching files inside `Pods/` / third-party SDK sources | Upgrade the dependency instead |
+| Enabling Swift 6 strict-concurrency migration beyond silencing new SDK warnings | Separate project decision; propose it, never execute it unprompted |
+
+### Compliance principle
+
+Every recommendation in this skill traces back to **Apple official sources only**:
+[Upcoming Requirements](https://developer.apple.com/news/upcoming-requirements/),
+iOS release notes, WWDC sessions, and Technical Notes (e.g., TN3187).
+Never invent requirements. When a fix has a version-branch option, prefer the branch that
+keeps behavior identical on all OS versions below iOS 26.
+
+### Deliverable format
+
+Before modifying files, output: (1) the scan summary, (2) the exact file list to add/modify
+with one-line reasons, (3) confirmation that nothing outside the iOS 26/27 scope is touched.
+After modifying, re-run the scanner to prove zero remaining Error-level findings.
+
+For the full timeline of when each scope becomes mandatory, see
+[docs/timeline.md](docs/timeline.md) / [docs/timeline.zh.md](docs/timeline.zh.md).
+
+---
+
+## Zero-Omission Adaptation Loop (MANDATORY for AI agents)
+
+The #1 complaint about AI-driven adaptation is "it misses something different every time".
+This skill eliminates omissions by forcing every adaptation to run against a **coverage ledger**
+instead of the agent's memory:
+
+1. **Load the ledger** — read `scripts/adaptation-ledger.json` (50 items across Phase 1/2/3 +
+   environment + ship gates). This list is complete and authoritative; never derive the task
+   list from memory or a subset. Human-readable mirror: [docs/coverage.md](docs/coverage.md).
+2. **Scan** — run `python3 scripts/ios26-scanner.py <project> --format markdown`. The report
+   ends with a **Manual Audit Checklist** (items that cannot be statically detected) and a
+   **Completion Gate** (SHIP-01~05).
+3. **Fix in ledger order** — work through every `auto` finding (Error first, then Warning),
+   then explicitly address each Manual Audit Checklist item, marking it done or "not applicable"
+   with a one-line reason. Silence is not an answer: every ledger item must end in one of
+   {fixed, verified-clean, not-applicable (with reason)}.
+4. **Rescan and loop** — re-run the scanner after each batch of changes. Repeat step 3 until
+   no unhandled finding remains.
+5. **Close the gate** — only when SHIP-01~05 are all green may you declare the project
+   ship-ready: errors zeroed, warnings triaged, manual checklist fully ticked, test matrix
+   passed, and git diff confined to iOS 26/27 scope.
+
+**Definition of Done**: the project is considered finished only when the scan report's
+Completion Gate is fully green. "Code compiles" alone is NOT done.
 
 ---
 
@@ -1054,8 +1130,15 @@ These rules are evaluated per project (not per line):
 | ARCH-001 | Missing SceneDelegate file | Error* |
 | ARCH-002 | Missing `UIApplicationSceneManifest` in Info.plist | Error* |
 | ARCH-003 | AppDelegate missing `sharedInstance` / `static let shared` | Warning |
+| ARCH-004 | Generated Info.plist (`GENERATE_INFOPLIST_FILE = YES`) — scene/launch keys may live in build settings | Info |
+| LAUNCH-001 | No launch screen key in app Info.plist (iOS 27 mandate: `UILaunchStoryboardName` / `UILaunchStoryboards` / `UILaunchScreen` / `UILaunchScreens`) | Warning |
+| LAUNCH-002 | `UILaunchImages` present — deprecated and does NOT satisfy the mandate | Warning |
+| LAUNCH-003 | Generated Info.plist: launch screen appears to come from `INFOPLIST_KEY_UILaunch*` build settings (verify) | Info |
+| EXT-001 | App extension targets detected — each must build/test with the new SDK | Info |
+| SDK-001 | Known third-party SDK with iOS 26 constraints detected in dependency manifest | Info |
+| SDK-002 | Dependency manifest found — cross-check all dependencies against `docs/sdk-compatibility.md` | Info |
 | PHASE2-001 | `UIDesignRequiresCompatibility` present — Phase 2 pending reminder | Info |
-| LINKER-001 | `-ld_classic` in `.xcconfig` / `.pbxproj` (removed in Xcode 27) | Warning |
+| LINKER-001 | `-ld_classic` in `.xcconfig` / `.pbxproj` / `Podfile` (removed in Xcode 27) | Warning |
 | OPENURL-002 | `LSApplicationQueriesSchemes` > 25 entries (iOS 27 limit) | Warning |
 
 > *ARCH-001/002 are downgraded to Warning for pure Swift projects with deployment target iOS 13+ (backward compatibility still works, but iOS 27 will require SceneDelegate).
@@ -1361,15 +1444,17 @@ Benefits of PHPicker:
 ## Resources
 
 ### Internal Documents
-- [Code Templates](../templates/) — Production-ready Swift and Objective-C templates (copy to your project and modify)
+- [Code Templates](templates/) — Production-ready Swift and Objective-C templates (copy to your project and modify)
   - `PrivacyInfo.xcprivacy` — Privacy Manifest template for App Store submission
   - `Swift6ConcurrencyAdapter.swift` — Swift 6 strict concurrency migration patterns
   - `UINavigationBar+LiquidGlassAdapter` — Fixes spacing & order reversal for nav-bar buttons under Liquid Glass
-- [FAQ](../docs/faq.md) — Common questions about deadlines, build errors, and Liquid Glass
-- [Testing Guide](../docs/testing-guide.md) — Complete testing framework for QA teams
-- [SDK Compatibility Cheat Sheet](../docs/sdk-compatibility.md) — Third-party SDK iOS 26 compatibility status
-- [iOS 27 / Xcode 27 Preview](../docs/ios27-preview.md) — Confirmed iOS 27 mandates (UIScene enforcement, launch screen requirement, canOpenURL deprecation, build-chain changes)
-- [Chinese Framework Guide](../.claude/iOS26-适配框架指南.md) — Full adaptation framework in Chinese
+- [FAQ](docs/faq.md) — Common questions about deadlines, build errors, and Liquid Glass
+- [Coverage Matrix](docs/coverage.md) — All 50 adaptation items with detection method and verification ([中文](docs/coverage.zh.md)); machine-readable source: `scripts/adaptation-ledger.json`
+- [Timeline & Adaptation Scope](docs/timeline.md) — Single reference for every iOS 26/27 milestone and its required scope ([中文](docs/timeline.zh.md))
+- [Testing Guide](docs/testing-guide.md) — Complete testing framework for QA teams
+- [SDK Compatibility Cheat Sheet](docs/sdk-compatibility.md) — Third-party SDK iOS 26 compatibility status
+- [iOS 27 / Xcode 27 Preview](docs/ios27-preview.md) — Confirmed iOS 27 mandates (UIScene enforcement, launch screen requirement, canOpenURL deprecation, build-chain changes)
+- [Chinese Framework Guide](.claude/iOS26-适配框架指南.md) — Full adaptation framework in Chinese
 
 ### External Links
 - [Apple Developer News](https://developer.apple.com/news/)

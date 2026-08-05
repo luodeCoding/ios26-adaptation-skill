@@ -1,6 +1,6 @@
-# 🚀 iOS 26 适配完全指南：自动化扫描 + 20+ 规则 + 踩坑实录
+# 🚀 iOS 26/27 适配完全指南：自动化扫描 + 零遗漏总账 + 踩坑实录
 
-> **TL;DR**：4 月 28 日 App Store 强制 iOS 26 SDK。本文分享一套开源适配方案：Python 扫描脚本（20+ 规则）、Swift/OC 双语言模板、两轮 QA 排查发现的 15 个盲点。GitHub 已开源，可直接用于生产。
+> **TL;DR**：4 月 28 日 App Store 强制 iOS 26 SDK，9 月 Xcode 27 强制 Liquid Glass，明年 4 月强制 iOS 27 SDK（未迁 UIScene 直接无法启动）。本文分享一套开源适配方案：Python 扫描脚本（50+ 规则）+ 50 项覆盖总账（AI 适配零遗漏）、Swift/OC 双语言模板、可一键安装到 Claude Code/Qoder 的 AI 技能，承诺只改 iOS 26/27 相关代码、不冲击主项目。GitHub 已开源，可直接用于生产。
 
 <!--
 【图1：封面头图 / 文章头图】
@@ -22,8 +22,28 @@
 
 | 日期 | 要求 | 影响 |
 |------|------|------|
-| **2026-04-28** | 强制使用 iOS 26 SDK | 不合规 = 直接拒审 ❌ |
+| **2026-04-28**（已生效） | 强制使用 iOS 26 SDK | 不合规 = 直接拒审 ❌ |
 | **~2026-09** | Xcode 27 发布，Liquid Glass 强制启用 | `UIDesignRequiresCompatibility` 失效 |
+| **~2027-04（预估）** | 强制使用 iOS 27 SDK（WWDC26 已确认） | 未迁移 UIScene 生命周期 = **App 无法启动** ❌ |
+
+> 📅 每个时间节点该适配什么，项目里有一页式总览：`docs/timeline.zh.md`
+
+---
+
+## 🛡 低冲击适配：只动 iOS 26/27，不碰你的业务代码
+
+很多人不敢让 AI 直接改主项目，怕改飞了。这套方案把**影响边界写进了技能文档**，AI 执行时必须遵守：
+
+| ✅ 只会改 | ❌ 绝不碰 |
+|-----------|-----------|
+| 扫描命中的废弃 API 调用点 | Deployment Target / 最低支持版本 |
+| SceneDelegate 架构 + Info.plist 场景清单 | 业务逻辑、无关文件的重构/格式化 |
+| 新增的扩展/适配器文件 | iOS 12 及更早的兼容路径 |
+| `#available` 版本分支包裹的差异 | `Pods/` 和第三方 SDK 源码 |
+
+执行流程也可审计：**扫描 → 列出改动文件清单 + 逐项理由 → 确认后才动手 → 改完重扫直到 Error 清零**。
+
+每一项适配要求都能追溯到苹果官方来源（Upcoming Requirements、Release Notes、WWDC、TN3187），不夹带私货。
 
 ---
 
@@ -73,7 +93,7 @@ python3 scripts/ios26-scanner.py /path/to/your/ios/project
 | PRIVACY-001 | ERROR | ./ | 0 | Missing PrivacyInfo.xcprivacy |
 ```
 
-### 20+ 条扫描规则
+### 三层规则体系（50+ 规则）
 
 | 类别 | 规则数 | 代表规则 |
 |------|--------|---------|
@@ -103,7 +123,17 @@ RULES = [
 ]
 ```
 
-新增规则只需加 5 行代码，无需改扫描引擎。
+新增规则只需加 5 行代码，无需改扫描引擎。除上表外，还覆盖：iOS 26 运行时实战坑（`tabBar` KVC 闪退、`navigationBar addSubview` 失效、`rightBarButtonItems` 顺序反转）和 iOS 27 前瞻检查（`canOpenURL`、`-ld_classic`、`LSApplicationQueriesSchemes` 25 条上限、ODR、MetricKit）。项目级检查新增：**启动屏强制项**（含生成式 Info.plist）、App 扩展 target、第三方 SDK 清单核对。
+
+### 🧾 为什么 AI 适配不再漏项：50 项覆盖总账
+
+用 AI 做适配最常见的痛点：**一会儿漏这样、一会儿漏那样**。本方案用三层机制堵死遗漏：
+
+1. **覆盖总账**（`scripts/adaptation-ledger.json`）：50 项适配项的完整清单（Phase 1/2/3 + 环境 + 上线门禁），每项绑定检测方式、规则 ID、验收标准、苹果官方来源。AI 必须逐项对照执行，不允许凭记忆取子集。
+2. **报告自带人工核对清单 + 上线门禁（SHIP-01~05）**：扫描报告末尾会列出无法静态检测的项（如转场动画 completion 幂等、C++ find 语义），并定义"可上线"的完成标准——门禁全绿才算完成，而不是"代码能编译"。
+3. **CI 一致性测试**：总账中每个自动检测项必须对应真实存在的扫描规则，未来漏项会直接测试失败。
+
+目标效果：**用这套技能改完后，再修一轮 bug，基本就能上线。**完整 50 项矩阵见仓库 `docs/coverage.zh.md`。
 
 ---
 
@@ -170,6 +200,21 @@ templates/
 
 ## 🚀 快速开始
 
+### 方式一：装成 AI 技能，一句话搞定（推荐）
+
+```bash
+# Claude Code：安装到用户技能目录
+git clone https://github.com/luodeCoding/ios26-adaptation-skill.git ~/.claude/skills/ios26-adaptation
+
+# 然后在你的 iOS 项目里对 AI 说：
+#   “帮我适配 iOS 26”
+# AI 会自动：加载 50 项总账 → 扫描 → 列改动清单 → 修改代码 → 重扫验证 → 关闭上线门禁
+```
+
+Qoder / 其他 Agent 工具同理：从 GitHub 地址安装为插件，或克隆后让 Agent 指向该目录。
+
+### 方式二：手动扫描 + 复制模板
+
 ```bash
 # 1. 克隆项目
 git clone https://github.com/luodeCoding/ios26-adaptation-skill.git
@@ -195,3 +240,6 @@ cp templates/swift/*.swift /your/project/path/
 **相关链接**：
 - GitHub：[github.com/luodeCoding/ios26-adaptation-skill](https://github.com/luodeCoding/ios26-adaptation-skill)
 - Apple 官方要求：[developer.apple.com/news/upcoming-requirements](https://developer.apple.com/news/upcoming-requirements)
+- 时间线总览（仓库内）：`docs/timeline.zh.md`
+- 覆盖矩阵（仓库内）：`docs/coverage.zh.md`
+- 适配影响声明（仓库内）：`INTEGRATION.md`

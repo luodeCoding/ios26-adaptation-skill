@@ -9,8 +9,8 @@
 > **Languages**: Objective-C / Swift  
 > **Platform**: iOS  
 > **Minimum iOS Version**: 12.0+  
-> **Last Updated**: 2026-07-30  
-> **Version**: [v1.9.1](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
+> **Last Updated**: 2026-08-03  
+> **Version**: [v1.12.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.md)
 
 **This repository is an AI adaptation skill tool. It does not participate in any project compilation.**
 
@@ -26,20 +26,48 @@ This repository is a **standalone skill knowledge base** for:
 
 **Files in this repository are NOT referenced or compiled by the main project.** All template code requires developers to **manually copy** into their main project.
 
+### Adaptation Impact Guarantee (Low-Impact Promise)
+
+When this skill is applied to your project (by an AI agent or manually), it is **surgical**:
+
+- ✅ **Only iOS 26/27-related code is touched** — deprecated API call sites, SceneDelegate lifecycle architecture, Info.plist adaptation keys, and new adapter files
+- ✅ **Deployment Target stays unchanged**; pre-iOS 13 fallback paths are preserved; all version differences are wrapped in `#available` / `@available`
+- ✅ **No drive-by refactors** — business logic, unrelated files, and third-party SDK sources (`Pods/`) are never touched
+- ✅ **Apple-official compliance** — every requirement traces to Apple's official sources (Upcoming Requirements, release notes, WWDC, TN3187)
+- ✅ **Auditable flow** — scan → file list with reasons → apply → re-scan until Error-level findings are zero
+
+Full statement: [INTEGRATION.md](INTEGRATION.md) § Adaptation Impact Statement.
+
+### Zero-Omission Guarantee (Coverage Ledger)
+
+The classic AI pain point: "it misses something different every time". v1.12.0 closes that gap:
+
+- 📋 **50-item coverage ledger** (`scripts/adaptation-ledger.json`) — the single complete task list for Phase 1/2/3; AI agents must work against it, never from memory ([docs/coverage.md](docs/coverage.md))
+- 🔍 **Scanner reports now end with a Manual Audit Checklist + Completion Gate (SHIP-01~05)** — items that can't be statically detected are listed explicitly, and "done" is defined as gate-all-green, not "code compiles"
+- 🛡️ **Consistency tested in CI** — every auto-detected ledger item must map to a real scanner rule; future omissions fail the build
+
+Goal: after applying this skill and one bug-fix round, your project is ready to ship.
+
 ## Key Deadlines
 
 | Date | Requirement | Impact |
 |------|-------------|--------|
-| **2026-04-28** | Must build with iOS 26 SDK | Non-compliant submissions will be rejected |
-| **~2026-09** | Xcode 27 release, Liquid Glass mandatory | `UIDesignRequiresCompatibility` will be removed |
+| **2026-04-28** (now in effect) | Must build with iOS 26 SDK | Non-compliant submissions will be rejected |
+| **~2026-09** | Xcode 27 release, Liquid Glass mandatory | `UIDesignRequiresCompatibility` will be removed; the Phase 2 window is closing |
 | **~2027-04 (est.)** | iOS 27 SDK build mandate (confirmed at WWDC26) | Apps without UIScene lifecycle **fail to launch**; launch screen mandatory |
 
 > iOS 27 requirements are already confirmed — see [docs/ios27-preview.md](docs/ios27-preview.md) for the Phase 3 preview.
+>
+> 📅 **Every milestone and its required adaptation scope in one page**: [docs/timeline.md](docs/timeline.md) ([中文](docs/timeline.zh.md))
 
 ## Changelog
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **[v1.12.0](CHANGELOG.md)** | 2026-08-03 | Zero-omission engine: 50-item coverage ledger, launch-screen/extension/third-party-SDK scanner rules, manual audit checklist + ship gate in reports, coverage matrix docs |
+| **[v1.11.0](CHANGELOG.md)** | 2026-08-03 | Distribution-ready release: adaptation impact statement (low-impact promise), timeline & scope overview doc, skill installation guide |
+| **[v1.10.0](CHANGELOG.md)** | 2026-08-03 | iOS 27 preview major refresh: Xcode 27 env requirements, code-level P1 risks, beta known issues, TN3187; SKILL.md broken links fixed |
+| **[v1.9.2](CHANGELOG.md)** | 2026-08-03 | README: added missing INTEGRATION.md references (structure tree, link, doc table) |
 | **[v1.9.1](CHANGELOG.md)** | 2026-07-30 | Phase 3 checklists (EN/ZH), iOS 26 pitfall test cases, README/INTEGRATION doc sync |
 | **[v1.9.0](CHANGELOG.md)** | 2026-07-30 | iOS 27 preview doc (Phase 3), iOS 26 runtime pitfall + iOS 27 forward-looking scanner rules, FAQ iOS 27 section |
 | **[v1.8.0](CHANGELOG.md)** | 2026-07-30 | `windows`/`statusBarFrame` scanner rules, Phase 2 pending reminder, scanner crash/false-positive fixes |
@@ -88,13 +116,26 @@ This repository is a **standalone skill knowledge base** for:
 
 ## How to Use
 
-### Option 1: AI Assistant (Recommended)
+### Option 1: Install as an AI Skill (Recommended)
 
-Load this repository as an AI skill. The AI reads the documentation and templates, then generates/modifies code directly in the main project.
+Install once, then just tell the AI "adapt my project to iOS 26/27" — it scans, plans, and applies changes inside your main project under the [low-impact promise](#adaptation-impact-guarantee-low-impact-promise).
+
+**Claude Code** (this repo is a native SKILL.md-format skill):
+
+```bash
+# Install into your user skill directory
+git clone https://github.com/luodeCoding/ios26-adaptation-skill.git ~/.claude/skills/ios26-adaptation
+
+# Then, inside your iOS project, simply say:
+#   "帮我适配 iOS 26" / "Help me adapt to iOS 26"
+```
+
+**Qoder / other agent tools**: install this repository as a plugin/skill from its GitHub URL,
+or clone it anywhere and point the agent at the folder — `SKILL.md` + `AGENTS.md` contain everything the agent needs.
 
 ```
 Developer: "Help me adapt to iOS 26"
-AI: Read SKILL.md → Scan main project → Generate adaptation code → Modify main project files directly
+AI: Read SKILL.md → Scan main project → Present file change list → Modify main project files → Re-scan to verify
 ```
 
 ### Option 2: Manual Developer Reference
@@ -113,6 +154,8 @@ cat ios26-adaptation-skill/templates/swift/SceneDelegate.swift
 python3 ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project
 ```
 
+> Detailed workflows, do's/don'ts, and the file-purpose table for both options are in [INTEGRATION.md](INTEGRATION.md).
+
 ## Project Structure
 
 ```
@@ -121,11 +164,14 @@ ios26-adaptation-skill/
 ├── README.zh.md           # Chinese version
 ├── SKILL.md               # 📘 AI core skill document (detailed adaptation guide)
 ├── AGENTS.md              # 🤖 Claude Code Agent usage guide
+├── INTEGRATION.md         # 🔗 Usage guide (how this repo relates to your main project)
 ├── CHANGELOG.md           # Version history
 ├── LICENSE                # MIT License
 │
 ├── docs/                  # 📚 Documentation
 │   ├── faq.md             # Frequently asked questions
+│   ├── coverage.md / .zh.md # 50-item coverage matrix (zero-omission ledger mirror)
+│   ├── timeline.md / .zh.md # iOS 26/27 timeline & per-phase adaptation scope
 │   ├── testing-guide.md   # Testing guide
 │   ├── sdk-compatibility.md # Third-party SDK compatibility sheet
 │   └── ios27-preview.md   # iOS 27 / Xcode 27 adaptation preview (Phase 3)
@@ -139,8 +185,9 @@ ios26-adaptation-skill/
 │   └── phase3-checklist.md / .zh.md
 │
 ├── scripts/               # 🔍 Scanning scripts
-│   ├── ios26-scanner.py   # Deprecated API scanner (40+ rules)
-│   └── test_scanner.py    # Scanner unit tests
+│   ├── ios26-scanner.py   # Deprecated API scanner (50+ rules, 3 tiers)
+│   ├── adaptation-ledger.json # Coverage ledger: 50 adaptation items (single source of truth)
+│   └── test_scanner.py    # Scanner unit tests + ledger consistency tests
 │
 └── templates/             # 📋 Code templates (reference only, not compiled)
     ├── PrivacyInfo.xcprivacy  # Privacy Manifest template
@@ -164,21 +211,24 @@ ios26-adaptation-skill/
 ### Scanning Script
 
 ```bash
-# Scan main project for deprecated APIs (40+ rules: iOS 26 + iOS 27 forward-looking)
+# Scan main project for deprecated APIs (50+ rules: iOS 26 + iOS 27 forward-looking)
 python3 scripts/ios26-scanner.py /path/to/your/ios/project
 
 # Output JSON report
 python3 scripts/ios26-scanner.py /path/to/your/ios/project --format json --output report.json
 ```
 
-Coverage includes: window access (`keyWindow` / `windows` / `statusBarFrame`), SceneDelegate architecture, notification options, iOS 26 runtime pitfalls (`tabBar` KVC crash, `navigationBar addSubview`), and iOS 27 forward-looking checks (`canOpenURL`, `-ld_classic`, `LSApplicationQueriesSchemes` limit, ODR, MetricKit). Full rule reference in [SKILL.md](SKILL.md).
+Coverage includes: window access (`keyWindow` / `windows` / `statusBarFrame`), SceneDelegate architecture, notification options, iOS 26 runtime pitfalls (`tabBar` KVC crash, `navigationBar addSubview`), and iOS 27 forward-looking checks (`canOpenURL`, `-ld_classic`, `LSApplicationQueriesSchemes` limit, ODR, MetricKit). Project-level checks add **launch-screen mandate (incl. generated Info.plist)**, app extensions, and third-party SDK manifests. Every report ends with a **Manual Audit Checklist** and the **Completion Gate (SHIP-01~05)**. Full rule reference in [SKILL.md](SKILL.md); full item matrix in [docs/coverage.md](docs/coverage.md).
 
 ### AI Skill Documents
 
 | Document | Purpose |
 |----------|---------|
-| `SKILL.md` | Complete adaptation guide, decision flows, code examples |
-| `AGENTS.md` | Claude Code workflow, triggers, checklists |
+| `SKILL.md` | Complete adaptation guide, decision flows, code examples, AI impact-boundary rules |
+| `AGENTS.md` | Claude Code workflow, triggers, checklists, minimal-impact rules |
+| `INTEGRATION.md` | Usage guide, adaptation impact statement, file-purpose table |
+| `docs/timeline.md` / `.zh.md` | Every iOS 26/27 milestone and its required adaptation scope |
+| `docs/coverage.md` / `.zh.md` + `scripts/adaptation-ledger.json` | 50-item coverage matrix — the zero-omission task list AI agents must follow |
 | `.claude/iOS26-适配框架指南.md` | Chinese complete framework guide |
 
 ## Common Misconceptions

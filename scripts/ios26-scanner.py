@@ -359,6 +359,29 @@ DEFAULT_EXCLUDES = {
     "ThirdParty",
 }
 
+# Project-level rules are emitted by scan_project() rather than the per-line RULES
+# table. Kept here so the coverage-ledger consistency test can validate them.
+PROJECT_RULE_IDS = {
+    "PRIVACY-001", "PHASE2-001", "LINKER-001", "OPENURL-002",
+    "ARCH-001", "ARCH-002", "ARCH-003", "ARCH-004",
+    "LAUNCH-001", "LAUNCH-002", "LAUNCH-003",
+    "EXT-001", "SDK-001", "SDK-002",
+}
+
+# iOS 27 launch screen mandate: Info.plist must contain one of these four keys
+LAUNCH_KEYS = ("UILaunchStoryboardName", "UILaunchStoryboards", "UILaunchScreen", "UILaunchScreens")
+
+# Third-party SDKs with known iOS 26 compatibility constraints
+# (see docs/sdk-compatibility.md for the full maintained table)
+KNOWN_SDKS = [
+    (re.compile(r"FBSDK\w+|FacebookCore|FacebookLogin|FacebookShare|FBSDKCoreKit", re.I), "Facebook iOS SDK"),
+    (re.compile(r"\bFirebase\w*", re.I), "Firebase"),
+    (re.compile(r"RevenueCat", re.I), "RevenueCat"),
+    (re.compile(r"JPush|JCore", re.I), "极光推送 JPush"),
+    (re.compile(r"\bAFNetworking\b", re.I), "AFNetworking"),
+    (re.compile(r"\bSDWebImage\b", re.I), "SDWebImage"),
+]
+
 
 def should_exclude(path: Path, explicit_excludes: List[str]) -> bool:
     parts = set(path.parts)
@@ -538,6 +561,182 @@ def check_architecture(project_path: Path) -> dict:
     }
 
 
+def check_launch_screens(project_path: Path) -> List[ScanIssue]:
+    """iOS 27 launch screen mandate: app Info.plist must contain one of the four
+    launch-screen keys, or the build must inject one via a generated Info.plist."""
+    issues: List[ScanIssue] = []
+    for plist in project_path.rglob("Info.plist"):
+        if any(part in DEFAULT_EXCLUDES for part in plist.parts):
+            continue
+        try:
+            content = plist.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        # Only audit application plists; extensions/frameworks have no launch screen
+        if "CFBundlePackageType" in content and "APPL" not in content:
+            continue
+        has_launch_key = any(key in content for key in LAUNCH_KEYS)
+        if has_launch_key:
+            continue
+        if "UILaunchImages" in content:
+            issues.append(
+                ScanIssue(
+                    rule_id="LAUNCH-002",
+                    severity="warning",
+                    message="UILaunchImages is deprecated and does NOT satisfy the iOS 27 launch screen mandate",
+                    file=str(plist),
+                    line=0,
+                    column=0,
+                    match="UILaunchImages",
+                    suggestion="Replace UILaunchImages with one of the four mandated keys: UILaunchStoryboardName / UILaunchStoryboards / UILaunchScreen / UILaunchScreens",
+                )
+            )
+        # No valid mandate key present — always surface the gap (even alongside LAUNCH-002)
+        issues.append(
+            ScanIssue(
+                rule_id="LAUNCH-001",
+                severity="warning",
+                message="No launch screen key found in app Info.plist (iOS 27 rejects submissions without one)",
+                file=str(plist),
+                line=0,
+                column=0,
+                match="none of " + " / ".join(LAUNCH_KEYS),
+                suggestion="Add UILaunchStoryboardName (storyboard) or UILaunchScreen (empty dict is valid). "
+                "If Info.plist is generated at build time, see any LAUNCH-003/ARCH-004 notes and verify "
+                "with xcodebuild -showBuildSettings",
+            )
+        )
+
+    # Generated Info.plist projects (Xcode 13+): keys may only exist as build settings
+    pbxproj_contents = []
+    for pbxproj in project_path.rglob("*.pbxproj"):
+        if should_exclude(pbxproj, []):
+            continue
+        try:
+            pbxproj_contents.append(pbxproj.read_text(encoding="utf-8", errors="ignore"))
+        except Exception:
+            continue
+    generated = any("GENERATE_INFOPLIST_FILE = YES" in c for c in pbxproj_contents)
+    if generated and any(i.rule_id == "LAUNCH-001" for i in issues):
+        launch_build_keys = ("INFOPLIST_KEY_UILaunchScreen_Generation", "INFOPLIST_KEY_UILaunchStoryboardName", "INFOPLIST_KEY_UILaunchScreen")
+        if any(k in c for c in pbxproj_contents for k in launch_build_keys):
+            # Launch screen is injected at build time — downgrade to an informational note
+            issues = [i for i in issues if i.rule_id != "LAUNCH-001"]
+            issues.append(
+                ScanIssue(
+                    rule_id="LAUNCH-003",
+                    severity="info",
+                    message="Generated Info.plist: launch screen appears to come from build settings",
+                    file=str(project_path),
+                    line=0,
+                    column=0,
+                    match="GENERATE_INFOPLIST_FILE = YES",
+                    suggestion="Verify with: xcodebuild -showBuildSettings | grep INFOPLIST_KEY_UILaunch",
+                )
+            )
+        else:
+            issues.append(
+                ScanIssue(
+                    rule_id="ARCH-004",
+                    severity="info",
+                    message="Generated Info.plist detected (GENERATE_INFOPLIST_FILE = YES)",
+                    file=str(project_path),
+                    line=0,
+                    column=0,
+                    match="GENERATE_INFOPLIST_FILE = YES",
+                    suggestion="Scene manifest and launch screen may live in build settings (INFOPLIST_KEY_*). Verify with xcodebuild -showBuildSettings -configuration Release -sdk iphoneos | grep -E 'INFOPLIST_KEY_UILaunch|SceneManifest'",
+                )
+            )
+    return issues
+
+
+def check_extensions(project_path: Path) -> List[ScanIssue]:
+    """App extensions ship their own binaries and must also build with the new SDK."""
+    ext_count = 0
+    for plist in project_path.rglob("Info.plist"):
+        if any(part in DEFAULT_EXCLUDES for part in plist.parts):
+            continue
+        try:
+            content = plist.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        if "NSExtension" in content and "CFBundlePackageType" in content and "APPL" not in content:
+            ext_count += 1
+    if ext_count == 0:
+        return []
+    return [
+        ScanIssue(
+            rule_id="EXT-001",
+            severity="info",
+            message=f"Detected {ext_count} app extension target(s) (widgets / share / notification, etc.)",
+            file=str(project_path),
+            line=0,
+            column=0,
+            match=f"{ext_count} extension Info.plist file(s)",
+            suggestion="Lifecycle/window changes apply to the main app only, but every extension is a separate binary: build and test each one with the iOS 26/27 SDK before release",
+        )
+    ]
+
+
+def check_third_party_sdks(project_path: Path) -> List[ScanIssue]:
+    """Detect dependency manifests and flag SDKs with known iOS 26 constraints."""
+    issues: List[ScanIssue] = []
+    manifests = []
+    for name in ("Podfile.lock", "Package.resolved", "Cartfile.resolved", "Cartfile", "Podfile"):
+        for found in project_path.rglob(name):
+            if should_exclude(found, []):
+                continue
+            manifests.append(found)
+    if not manifests:
+        return issues
+
+    matched = set()
+    total_deps = 0
+    for manifest in manifests:
+        try:
+            content = manifest.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        for pattern, sdk_name in KNOWN_SDKS:
+            if pattern.search(content):
+                matched.add(sdk_name)
+        if manifest.name == "Podfile.lock":
+            pods_block = re.search(r"^PODS:(.*?)(?:^\n[A-Z]|\Z)", content, re.M | re.S)
+            if pods_block:
+                total_deps += len(re.findall(r"^  - [\"']?\w", pods_block.group(1), re.M))
+        elif manifest.name == "Package.resolved":
+            total_deps += len(re.findall(r'"identity"\s*:', content))
+        elif manifest.name in ("Cartfile.resolved", "Cartfile"):
+            total_deps += len(re.findall(r'^\s*(github|git|binary)', content, re.M))
+
+    for sdk_name in sorted(matched):
+        issues.append(
+            ScanIssue(
+                rule_id="SDK-001",
+                severity="info",
+                message=f"Third-party SDK detected: {sdk_name}",
+                file=str(manifests[0]),
+                line=0,
+                column=0,
+                match=sdk_name,
+                suggestion=f"Verify {sdk_name} against the minimum compatible version in docs/sdk-compatibility.md and upgrade before the iOS 26 release",
+            )
+        )
+    issues.append(
+        ScanIssue(
+            rule_id="SDK-002",
+            severity="info",
+            message=f"Dependency manifest found ({len(manifests)} file(s), ~{total_deps} dependencies detected)",
+            file=str(manifests[0]),
+            line=0,
+            column=0,
+            match=", ".join(sorted({m.name for m in manifests})),
+            suggestion="Cross-check every third-party dependency against docs/sdk-compatibility.md; outdated SDKs are a top cause of iOS 26 build failures",
+        )
+    )
+    return issues
+
+
 def scan_project(project_path: Path, extra_excludes: List[str]) -> ScanResult:
     result = ScanResult()
     source_extensions = {".swift", ".m", ".mm"}
@@ -601,7 +800,8 @@ def scan_project(project_path: Path, extra_excludes: List[str]) -> ScanResult:
         )
 
     # iOS 27 build-chain check: -ld_classic is removed in Xcode 27 (build fails)
-    for config_file in list(project_path.rglob("*.xcconfig")) + list(project_path.rglob("*.pbxproj")):
+    config_files = list(project_path.rglob("*.xcconfig")) + list(project_path.rglob("*.pbxproj")) + list(project_path.rglob("Podfile"))
+    for config_file in config_files:
         if should_exclude(config_file, extra_excludes):
             continue
         try:
@@ -658,6 +858,11 @@ def scan_project(project_path: Path, extra_excludes: List[str]) -> ScanResult:
     arch_severity = "error"
     if result.architecture.get("is_swift_only") and (result.architecture.get("deployment_target") or 0) >= 13.0:
         arch_severity = "warning"
+
+    # Zero-omission project-level checks: launch screen mandate, extensions, third-party SDKs
+    result.issues.extend(check_launch_screens(project_path))
+    result.issues.extend(check_extensions(project_path))
+    result.issues.extend(check_third_party_sdks(project_path))
 
     # Add architecture infos
     if not result.architecture["has_scenedelegate"]:
@@ -743,6 +948,29 @@ def format_markdown(result: ScanResult, project_path: Path) -> str:
     lines.append("- [ ] Verify third-party SDK compatibility")
     lines.append("- [ ] Run build with Xcode 26 after fixes")
     lines.append("")
+
+    lines.append("## Manual Audit Checklist (cannot be auto-detected)")
+    lines.append("Items below are part of the coverage ledger (`scripts/adaptation-ledger.json`) but require human review. Check each one before release:")
+    lines.append("- [ ] P2-06 Hardcoded bottom padding vs floating TabBar safe area (`additionalSafeAreaInsets`)")
+    lines.append("- [ ] P2-07 `UIScrollView.allowsLiquidTransform` edge-scroll distortion")
+    lines.append("- [ ] P2-08 View-traversal assumptions broken by auto-inserted `UIDropShadowView`")
+    lines.append("- [ ] P2-09 Custom transition completion blocks are idempotent (iOS 26 allows interruption)")
+    lines.append("- [ ] P3-04 Duplicate Clang `module.modulemap` names (Xcode 27 de-duplication)")
+    lines.append("- [ ] P3-08 URL-encoding workarounds vs NSURL double-encoding fix")
+    lines.append("- [ ] P3-09 C++ `multimap/multiset::find()` reliance on first-equal element")
+    lines.append("- [ ] P3-10 Custom `stat()` extensions vs System framework `FilePath.stat()`")
+    lines.append("- [ ] P3-11 `idiom`/`orientation` layout checks → size classes")
+    lines.append("- [ ] ENV-01/ENV-02 Xcode & macOS versions meet the target phase requirements")
+    lines.append("")
+
+    lines.append("## Completion Gate (Ship-Ready Definition of Done)")
+    lines.append("The adaptation is complete only when ALL of the following hold:")
+    lines.append("- [ ] SHIP-01 This scan reports **0 errors**")
+    lines.append("- [ ] SHIP-02 Every warning is fixed or has a recorded exemption reason")
+    lines.append("- [ ] SHIP-03 Manual Audit Checklist above fully checked")
+    lines.append("- [ ] SHIP-04 Test matrix passed: minimum iOS version + iOS 13+ + iOS 26 device (see docs/testing-guide.md)")
+    lines.append("- [ ] SHIP-05 Low-impact boundary confirmed: Deployment Target unchanged, `git diff` contains only iOS 26/27 adaptation files")
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -795,6 +1023,13 @@ def main():
                     "warnings": result.warnings,
                     "infos": result.infos,
                 },
+                "completion_gate": [
+                    "SHIP-01: scan reports 0 errors",
+                    "SHIP-02: every warning fixed or exempted with reason",
+                    "SHIP-03: manual audit checklist fully checked",
+                    "SHIP-04: test matrix passed (minimum iOS + iOS 13+ + iOS 26 device)",
+                    "SHIP-05: low-impact boundary confirmed (Deployment Target unchanged, no out-of-scope diff)",
+                ],
             },
             indent=2,
             ensure_ascii=False,

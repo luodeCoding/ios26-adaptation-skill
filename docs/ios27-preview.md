@@ -1,8 +1,8 @@
 # iOS 27 / Xcode 27 适配前瞻（Phase 3 预告）
 
-> **最后更新**: 2026-07-30
-> **信息来源**: WWDC26 (2026-06)、Apple 官方文档、iOS 27 Beta Release Notes
-> **状态**: iOS 27 处于 Beta 阶段，正式版预计 2026-09 随 Xcode 27 发布
+> **最后更新**: 2026-08-03
+> **信息来源**: WWDC26 (2026-06)、Apple 官方文档、iOS 27 Beta Release Notes、TN3187、社区实战反馈
+> **状态**: iOS 27.0 beta 3 / 公测版已推送（2026-07），正式版预计 2026-09 随 iPhone 18 发布；Xcode 27 beta 3 进行中
 
 本文档梳理 WWDC26 已**官方确认**的 iOS 27 / Xcode 27 强制要求与高风险变更。
 如果你正在做 iOS 26 适配（本技能库的 Phase 1/2），**强烈建议同时读完本文**——
@@ -21,6 +21,9 @@ iOS 26 的 SceneDelegate 迁移与 iOS 27 的强制要求是同一条演进线�
 | `canOpenURL(_:)` **废弃** + allowlist 上限 50→25 | 🟡 P1 | 链接 iOS 27 SDK 后超出 25 条的 scheme 静默返回 false | 新增检查项（OPENURL-001/002） |
 | On Demand Resources（`NSBundleResourceRequest`）**废弃** | 🟡 P1 | 后续版本可能移除 | 新增检查项（ODR-001） |
 | `MXMetricManager` → `MetricManager` | 🟡 P1 | MetricKit 框架级重构 | 新增检查项（METRICKIT-001） |
+| `NSURL URLWithString:` 双重编码修复 | 🟡 P1 | 旧 workaround 可能导致 URL 解析异常 | 手动排查 |
+| C++ `multimap/multiset::find()` 语义变化 | 🟡 P1 | 不再保证返回首个等值元素，隐蔽逻辑错误 | 手动排查 |
+| System 框架新增 `FilePath.stat()` | 🟡 P1 | 与自定义扩展的非限定 `stat()` 命名冲突 → 编译错误 | 手动排查 |
 | idiom / orientation 不再适合布局判断 | 🟡 P1 | iPhone App 在 iPad 上全尺寸可调，须改用 size classes | 手动 Review |
 
 ---
@@ -58,6 +61,7 @@ WWDC26 Session 278《Modernize your UIKit app》(2:36) 措辞同样直接：
 - **动态路由**：在 AppDelegate 中实现 scene-configuration 方法，按 `session.role` 返回不同配置。
 - 注意配置时应指定 **`UIWindowScene`** 而不是 `UIScene`；CarPlay 场景使用专属的 template-application scene type。
 - **多窗口/多 Scene 支持仍然是可选的**——强制的只是生命周期本身，不要求你的数据模型 scene 化。
+- Apple 官方技术注解 **TN3187**《Migrating to the UIKit scene-based life cycle》已发布，是该迁移的权威参考；Beta 阶段已有真实崩溃案例：老项目（AppDelegate 单窗口生命周期）在 iOS 27.0 beta 上调试运行直接崩溃，无论使用 Xcode 26.5 还是 Xcode 27 beta 都会触发。
 
 👉 直接复用本技能库的模板即可满足要求：
 `templates/swift/SceneDelegate.swift`、`templates/objc/SceneDelegate.h/.m`、
@@ -169,9 +173,16 @@ let installed = await UIApplication.shared.open(
 
 ---
 
-## 4. 构建链 P0 风险
+## 4. 构建链与代码级 P0/P1 风险
 
-### 4.1 -ld_classic / ld64 链接器完全移除
+### 4.1 Xcode 27 环境要求（前置条件）
+
+- Xcode 27 beta 需 **macOS Tahoe 26.4+**，包含 Swift 6.4 与 iOS 27 SDK。
+- Xcode 27 **仅支持 Apple Silicon Mac**（Intel Mac 无法安装）。
+- 真机调试最低支持 **iOS 17+** 设备；模拟器照常支持更低版本。
+- macOS 27.0+ 构建目标的 `ARCHS_STANDARD` 不再包含 x86_64。
+
+### 4.2 -ld_classic / ld64 链接器完全移除
 
 Xcode 27 中 ld64 被彻底移除，`-ld_classic` 选项不再支持——引用未清理会**直接编译失败**。
 这个 flag 常见于 Xcode 15 时代为绕过新链接器 bug 而添加的 workaround。
@@ -183,7 +194,7 @@ grep -r "ld_classic" --include="*.xcconfig" --include="*.pbxproj" .
 
 依赖旧链接器行为的三方库（常见于闭源 .a/.framework）需升级到兼容版本。
 
-### 4.2 Clang module 同名去重强制
+### 4.3 Clang module 同名去重强制
 
 Swift 依赖扫描器要求单次 scan action 中所有可达的 Clang module 名称唯一，
 重复声明（常见于三方源码自带的 `module.modulemap` 重新声明了 SDK 模块）会导致编译失败。
@@ -192,7 +203,7 @@ Swift 依赖扫描器要求单次 scan action 中所有可达的 Clang module �
 find . -name "module.modulemap" -not -path "*/build/*" | sort
 ```
 
-### 4.3 On Demand Resources 废弃
+### 4.4 On Demand Resources 废弃
 
 `NSBundleResourceRequest` / ODR 已废弃，迁移目标是 **Background Assets** 框架
 （支持路径通配、文件排除、自定义子路径、本地化资源包）。
@@ -201,10 +212,32 @@ find . -name "module.modulemap" -not -path "*/build/*" | sort
 grep -r "NSBundleResourceRequest" --include="*.swift" --include="*.m" .
 ```
 
-### 4.4 MetricKit 框架级重构
+### 4.5 MetricKit 框架级重构
 
 `MXMetricManager` → `MetricManager`（异步序列接收指标）、`MetricReport`（Codable + Sendable）、
 `DiagnosticReport`、`MetricResult`。旧 API 全面替换，性能监控 SDK 需同步升级。
+新增的 **StateReporting** 框架可与 MetricKit 配合，按 App 自定义状态细分性能数据。
+
+### 4.6 NSURL 双重编码修复（P1）
+
+`+[NSURL URLWithString:]` 不再对有效百分号转义序列中的 `%` 进行双重编码。
+若项目中存在针对旧双重编码行为的 workaround（例如手动预解码/预编码），
+升级 iOS 27 SDK 后可能导致 URL 解析异常，需逐一搜索评估并移除。
+
+### 4.7 C++ 标准库行为变更（P1）
+
+- `multimap/multiset::find()` **不再保证返回第一个等值元素的迭代器**——
+  依赖此行为的代码会产生难以察觉的逻辑错误，应改用 `lower_bound` 或 `equal_range`。
+- `map/set` 的 `lower_bound/upper_bound` 对非严格弱序比较器结果变化
+  （临时逃逸宏 `_LIBCPP_ENABLE_LEGACY_TREE_LOWER_UPPER_BOUND`，下个版本移除）。
+- `bitset::operator[]` 返回类型改为 `bool`（不再是引用）。
+- 混合 C++ 代码的项目（音视频/地图/游戏引擎常见）需在升级 SDK 前专项排查。
+
+### 4.8 System 框架 `stat()` 命名冲突（P1）
+
+新增的 `FilePath.stat()` / `FileDescriptor.stat()` 实例方法可能与自定义扩展中
+非限定的 `stat()` 调用冲突导致编译错误。
+适配：改用 `Darwin.stat()` 显式限定，或迁移到新的 Swift `stat()` 方法。
 
 ---
 
@@ -228,7 +261,21 @@ iOS 27 中 iPhone Mirroring 窗口在 Mac 上自由缩放、iPhone-only App 在 
 
 ---
 
-## 6. 时间线与三阶段策略
+## 6. iOS 27 Beta 已知问题（截至 2026-07）
+
+调试/构建阶段的已知问题与规避，升级 beta 前先自查：
+
+| 问题 | 触发条件 | Workaround |
+|------|---------|-----------|
+| Address Sanitizer 启动失败 | iOS/tvOS/watchOS/visionOS 27.0 + Xcode 26.4 或更早 | 使用 Xcode 26.5+ |
+| Core AI 模型执行失败 | Metal API Validation 启用时 | 禁用 Metal API Validation |
+| App 崩溃 | Memory Tagging 与 GPU 同时启用 | 二者关闭其一 |
+| MusicKit `@State` 不更新 | `MusicPlayer.Queue/State` 使用 `@State` | 改用 `@ObservedObject` |
+| 老项目调试运行直接崩溃 | AppDelegate 单窗口生命周期 + iOS 27.0 beta | 完成 SceneDelegate 迁移（见第 1 节） |
+
+---
+
+## 7. 时间线与三阶段策略
 
 ```
 2026-04-28          2026-09 (Xcode 27)              2027-04 (预估)
@@ -246,18 +293,23 @@ iOS 27 中 iPhone Mirroring 窗口在 Mac 上自由缩放、iPhone-only App 在 
 （manifest + scene-configuration 方法齐备），Phase 3 的最大风险项就已提前消除。
 参考历史规律，App Store 对 iOS 27 SDK 的强制期限预计在 **2027 年 4 月前后**。
 
+> ⏰ 提醒：**2026-04-28** 的 iOS 26 SDK 构建要求已生效；**~2026-09** Xcode 27 发布后
+> `UIDesignRequiresCompatibility` 失效，Phase 2 窗口正在关闭。
+
 ---
 
-## 7. 参考资源
+## 8. 参考资源
 
 ### Apple 官方
 - [Transitioning to the UIKit scene-based life cycle](https://developer.apple.com/documentation/UIKit/transitioning-to-the-uikit-scene-based-life-cycle) — UIScene 强制要求与迁移指南
 - [Upcoming requirements — Apple Developer](https://developer.apple.com/news/upcoming-requirements/) — 官方截止日期权威来源
+- Apple Technical Note **TN3187**《Migrating to the UIKit scene-based life cycle》— Scene 迁移官方技术注解
 - WWDC26 Session 278 "Modernize your UIKit app" — UIScene 强制 + resize 适配
 - [UILaunchScreen / UILaunchStoryboardName 文档](https://developer.apple.com/documentation/bundleresources/information-property-list/uilaunchscreen)
 
 ### 社区文章与开源项目
-- [WWDC26 / iOS27 API 更新适配风险总结（lrdcq）](https://lrdcq.com/me/read.php/169.htm) — 中文，含 P0/P1/P2 分级与快速检查命令
+- [WWDC26 / iOS27 API 更新适配风险总结（lrdcq）](https://www.lrdcq.com/me/read.php/169.htm) — 中文，含 P0/P1/P2 分级与快速检查命令
+- [升级 iOS 27.0 后调试运行 App 崩溃问题（腾讯云社区）](https://cloud.tencent.com/developer/article/2687217) — 老项目 iOS 27 beta 崩溃实战案例与修复步骤
 - [conorluddy/LiquidGlassReference](https://github.com/conorluddy/LiquidGlassReference) — iOS 26 Liquid Glass Swift/SwiftUI 综合参考项目
 - [记录我适配 iOS 26 遇到的一些问题（cnblogs weicy）](https://www.cnblogs.com/weicyNo-1/p/19157486) — tabBar KVC 闪退、导航栏 addSubview 失效等一线经验（详见 FAQ）
 - [UIKit + SwiftUI 混合架构下的 Liquid Glass 适配实战（fatbobman）](https://fatbobman.com/zh/posts/grow-on-ios26/) — 18 万五星应用 Grow 的 Phase 2 实战经验

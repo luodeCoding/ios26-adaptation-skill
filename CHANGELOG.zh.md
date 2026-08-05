@@ -6,6 +6,64 @@
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-08-03
+
+### 新增 — 零遗漏适配引擎
+- **覆盖总账** `scripts/adaptation-ledger.json` — 50 项适配项（Phase 1 ×20、Phase 2 ×10、Phase 3 ×12、环境 ×3、上线门禁 ×5），作为唯一完整任务清单；每项绑定检测方式（`auto`/`manual`/`test`）、规则 ID、验收标准与苹果官方来源
+- **扫描器新增项目级规则**：
+  - `LAUNCH-001/002/003` — iOS 27 启动屏强制项（四个 Info.plist 键；`UILaunchImages` 标记为不满足强制要求；生成式 Info.plist 项目通过 `INFOPLIST_KEY_UILaunch*` 构建设置验证）
+  - `ARCH-004` — 生成式 Info.plist 检测（`GENERATE_INFOPLIST_FILE = YES`）
+  - `EXT-001` — App 扩展 target 检测（每个扩展都需用新 SDK 构建）
+  - `SDK-001/002` — 第三方依赖清单核对（对照 `docs/sdk-compatibility.md`）
+- **扫描报告新增**：人工核对清单（无法静态检测的项）与上线门禁（SHIP-01~05，即"可上线"的完成定义）；JSON 输出新增 `completion_gate` 字段
+- **覆盖矩阵文档** `docs/coverage.md` / `docs/coverage.zh.md` — 总账的人类可读镜像，按阶段分表
+- **CI 一致性测试**：总账中每个 `auto` 项的规则 ID 必须在扫描器中真实存在；阶段覆盖完整性校验（共 58 个测试）
+
+### 变更
+- `SKILL.md`：新增强制"零遗漏适配循环"工作流（加载总账 → 扫描 → 按总账顺序修复 → 重扫 → 关门禁）与完成定义；Resources 索引纳入覆盖矩阵
+- `AGENTS.md`：标准工作流要求必须加载总账，并在宣告可上线前关闭 SHIP 门禁
+- `README.md` / `README.zh.md`：版本 v1.12.0、"零遗漏保证"章节、结构树与文档表更新
+- `LINKER-001` 现在同时扫描 `Podfile` 中的 `-ld_classic`
+
+## [1.11.0] - 2026-08-03
+
+### 新增
+- **推广版发布** — 仓库可直接作为 AI 技能安装，并安全地应用于生产项目
+- **适配影响声明（低冲击承诺）**：明确技能在用户主项目中可改与禁改的边界
+  - `SKILL.md`：新增「Adaptation Impact Boundaries (MANDATORY for AI agents)」章节 — 允许修改项、禁止触碰项、苹果官方标准对齐原则、可审计交付格式
+  - `AGENTS.md`：新增「Minimal-Impact Adaptation Rules (MANDATORY)」章节；技能概览补充第三阶段条目
+  - `INTEGRATION.md`：新增面向用户的「适配影响声明（低冲击承诺）」章节
+  - `README.md` / `README.zh.md`：新增「适配影响承诺（低冲击保证）」要点
+- **新增时间线文档 `docs/timeline.md` / `docs/timeline.zh.md`** — iOS 26/27 全部时间节点（2025-06 → ~2027-04）的唯一权威参考：每个节点的强制要求、适配范围、不做的后果、对应扫描规则与检查清单
+- **技能安装指南**：README（双语）和掘金文章新增 Claude Code 一键安装（`~/.claude/skills/`）及 Qoder/其他 Agent 工具接入说明
+- **`platforms/article.md`**：推广版刷新 — 新增 iOS 27 截止日、低冲击适配章节、40+ 规则覆盖说明、技能安装快速开始
+
+### 变更
+- README（双语）：版本号升级至 v1.11.0；项目结构树与 AI 技能文档表纳入时间线新文档
+
+## [1.10.0] - 2026-08-03
+
+### 新增
+- **`docs/ios27-preview.md` 全面更新（基于 2026-08 最新调研）**
+  - Xcode 27 环境要求（macOS Tahoe 26.4+、Swift 6.4、仅 Apple Silicon、真机调试 iOS 17+、ARCHS_STANDARD 移除 x86_64）
+  - 新增三个代码级 P1 风险：NSURL 双重编码修复、C++ `multimap/multiset::find()` 语义变化、System 框架 `FilePath.stat()` 命名冲突
+  - 新增第 6 节「iOS 27 Beta 已知问题」表（Address Sanitizer、Core AI + Metal、Memory Tagging、MusicKit @State、老项目崩溃）
+  - TN3187 官方技术注解引用 + iOS 27.0 beta 老项目崩溃实战案例（腾讯云社区）
+  - Beta 进展更新（iOS 27.0 beta 3 / 公测版已推送，正式版预计 2026-09 随 iPhone 18 发布）
+- **FAQ**：新增 Q40（Xcode 27 环境要求与 Beta 时间线）、Q41（代码级 breaking changes 排查清单）
+- **SKILL.md**：iOS 27 章节补充 TN3187、代码级 P1 变更与 Beta 状态；AGENTS.md 新增对应触发词
+
+### 修复
+- **SKILL.md**：Resources 内部文档链接 `../docs/` 统一为仓库根相对路径 `docs/`，消除断链
+- **README（双语）**：关键时间节点标注 2026-04-28 已生效、Phase 2 窗口正在关闭
+
+## [1.9.2] - 2026-08-03
+
+### 修复
+- **README.md / README.zh.md**：补齐缺失的 `INTEGRATION.md` 引用 — 项目结构树新增条目、「使用方式」章节追加引导链接、「AI 技能文档」表格新增一行
+- **README.zh.md**：项目结构树中「本文件」标注从 `README.md` 修正为 `README.zh.md`
+- **INTEGRATION.md**：文件用途表补齐缺失的根目录文档条目（README（双语）、INTEGRATION、CHANGELOG）
+
 ## [1.9.1] - 2026-07-30
 
 ### 新增

@@ -72,6 +72,46 @@ python3 ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/projec
 
 ---
 
+## 适配影响声明（低冲击承诺）
+
+把本技能应用到你的主项目时，**只动 iOS 26/27 相关的部分**，其余代码原样保留：
+
+### ✅ 只会修改的范围
+
+| 范围 | 具体内容 |
+|------|---------|
+| 废弃 API 调用点 | 仅替换扫描命中的废弃写法（`keyWindow`、`delegate.window`、通知选项等），逐行对应替换 |
+| 生命周期架构 | 新增 SceneDelegate 文件、Info.plist 增加 `UIApplicationSceneManifest`、AppDelegate 抽取启动方法 |
+| Info.plist | 仅新增适配相关键（场景清单、`UIDesignRequiresCompatibility`、启动屏键） |
+| 新增适配文件 | 按扫描结果，从 `templates/` 拷贝实际需要的扩展/分类/适配器文件 |
+| 版本分支 | 所有行为差异用 `#available` / `@available` 包裹，**不删除任何旧系统路径** |
+
+### ❌ 绝不触碰的部分
+
+| 禁止项 | 原因 |
+|--------|------|
+| 修改 **Deployment Target / 最低 iOS 版本** | 苹果无此要求，改了会悄悄改变你的用户覆盖范围 |
+| 重构业务逻辑、重命名符号、格式化无关文件 | 超出适配范围，只会制造噪音 diff 和回归风险 |
+| 删除 iOS 12 / iOS 13 之前的兼容路径 | 老系统运行时支持必须保留 |
+| “顺便”替换未废弃的 API（如 SwiftUI 现代化、能正常编译就不动的 StoreKit 重写） | 只修复阻塞 iOS 26/27 强制要求、或扫描器报 Error 的项 |
+| 修改 `Pods/` / 第三方 SDK 源码 | 升级依赖版本，不打补丁 |
+| 擅自开启 Swift 6 严格并发迁移 | 属于独立项目决策，只建议、不代执行 |
+
+### 官方标准对齐
+
+所有适配项均可追溯到 **Apple 官方来源**：[Upcoming Requirements](https://developer.apple.com/news/upcoming-requirements/)、
+iOS Release Notes、WWDC Session、Technical Note（如 TN3187）。不编造任何要求；
+每个时间节点该做什么，见 [docs/timeline.zh.md](docs/timeline.zh.md)（[English](docs/timeline.md)）。
+
+### AI 执行流程（可预期、可审计）
+
+```
+扫描 → 输出问题清单 → 列出“新增/修改文件清单 + 逐项理由”
+    → 确认不越界后才动手 → 改完重扫验证 Error 清零
+```
+
+---
+
 ## 重要说明
 
 ### ❌ 不要做的事情
@@ -105,14 +145,20 @@ AI 参考模板，直接在主项目中生成修复代码
 
 | 文件/目录 | 用途 | 谁使用 |
 |----------|------|--------|
+| `README.md` / `README.zh.md` | 仓库入口：关键时间节点、阶段策略、快速上手 | 所有人 |
 | `SKILL.md` | 完整适配指南、决策流程、代码示例 | AI + 开发者 |
 | `AGENTS.md` | Claude Code 工作流、触发条件 | AI |
+| `INTEGRATION.md` | 使用说明、本仓库与主项目的关系 | 开发者 |
+| `CHANGELOG.md` / `.zh.md` | 版本历史 | 所有人 |
 | `templates/swift/` | Swift 代码模板 | AI 参考后生成代码 |
 | `templates/objc/` | Objective-C 代码模板 | AI 参考后生成代码 |
 | `templates/mixed/` | 混编项目桥接方案 | AI 参考后生成代码 |
 | `templates/PrivacyInfo.xcprivacy` | Privacy Manifest 模板 | 开发者复制后修改 |
-| `scripts/ios26-scanner.py` | 废弃 API 扫描脚本（40+ 条规则） | AI / 开发者手动运行 |
+| `scripts/ios26-scanner.py` | 废弃 API 扫描脚本（50+ 条规则，三层检测，报告含人工核对清单与上线门禁） | AI / 开发者手动运行 |
+| `scripts/adaptation-ledger.json` | 50 项覆盖总账（零遗漏任务清单唯一事实源） | AI 逐项对照执行 |
 | `docs/faq.md` | 常见问题解答 | 开发者参考 |
+| `docs/timeline.md` / `.zh.md` | iOS 26/27 时间线与适配范围总览（唯一时间线权威参考） | 所有人 |
+| `docs/coverage.md` / `.zh.md` | 50 项覆盖矩阵（总账人类可读镜像） | 所有人 |
 | `docs/sdk-compatibility.md` | 第三方 SDK 兼容性速查表 | 开发者参考 |
 | `docs/ios27-preview.md` | iOS 27 / Xcode 27 适配前瞻（第三阶段） | AI + 开发者 |
 | `examples/` | 分阶段检查清单（第一/二/三阶段，双语） | AI + 开发者 |
@@ -132,7 +178,7 @@ python3 /path/to/ios26-adaptation-skill/scripts/ios26-scanner.py \
     --output report.json
 ```
 
-扫描内容（共 40+ 项检查，完整规则参考见 `SKILL.md`）：
+扫描内容（共 50+ 项检查，完整规则参考见 `SKILL.md`，全量适配项见 `docs/coverage.zh.md`）：
 
 **iOS 26 核心适配**
 - `keyWindow` / `delegate.window` / `windows` / `statusBarFrame` 等窗口访问废弃 API

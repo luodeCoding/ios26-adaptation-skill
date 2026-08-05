@@ -20,8 +20,12 @@ _spec.loader.exec_module(_scanner)
 scan_file = _scanner.scan_file
 scan_project = _scanner.scan_project
 check_architecture = _scanner.check_architecture
+check_launch_screens = _scanner.check_launch_screens
+check_extensions = _scanner.check_extensions
+check_third_party_sdks = _scanner.check_third_party_sdks
 ScanIssue = _scanner.ScanIssue
 RULES = _scanner.RULES
+PROJECT_RULE_IDS = _scanner.PROJECT_RULE_IDS
 
 
 class TestScannerRules(unittest.TestCase):
@@ -496,6 +500,140 @@ class TestFullProjectScan(unittest.TestCase):
             self.assertIn("WINDOW-001", rule_ids)
             self.assertIn("SCREEN-001", rule_ids)
             self.assertIn("WEB-001", rule_ids)
+
+
+class TestLaunchScreenChecks(unittest.TestCase):
+    """iOS 27 launch screen mandate checks (LAUNCH-001/002/003, ARCH-004)."""
+
+    APP_PLIST_NO_LAUNCH = (
+        "<plist><dict><key>CFBundlePackageType</key><string>APPL</string></dict></plist>"
+    )
+
+    def test_launch_001_missing_key(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "Info.plist").write_text(self.APP_PLIST_NO_LAUNCH)
+            issues = check_launch_screens(Path(tmpdir))
+            self.assertIn("LAUNCH-001", [i.rule_id for i in issues])
+
+    def test_launch_ok_with_key(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "Info.plist").write_text(
+                "<plist><dict><key>CFBundlePackageType</key><string>APPL</string>"
+                "<key>UILaunchScreen</key><dict/></dict></plist>"
+            )
+            issues = check_launch_screens(Path(tmpdir))
+            self.assertNotIn("LAUNCH-001", [i.rule_id for i in issues])
+
+    def test_launch_002_deprecated_uilaunchimages(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "Info.plist").write_text(
+                "<plist><dict><key>CFBundlePackageType</key><string>APPL</string>"
+                "<key>UILaunchImages</key><array/></dict></plist>"
+            )
+            issues = check_launch_screens(Path(tmpdir))
+            rule_ids = [i.rule_id for i in issues]
+            self.assertIn("LAUNCH-002", rule_ids)
+            self.assertIn("LAUNCH-001", rule_ids)  # UILaunchImages does not satisfy the mandate
+
+    def test_launch_003_generated_plist_with_build_key(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "Info.plist").write_text(self.APP_PLIST_NO_LAUNCH)
+            (Path(tmpdir) / "App.xcodeproj").mkdir()
+            (Path(tmpdir) / "App.xcodeproj" / "project.pbxproj").write_text(
+                "GENERATE_INFOPLIST_FILE = YES;\nINFOPLIST_KEY_UILaunchScreen_Generation = YES;"
+            )
+            issues = check_launch_screens(Path(tmpdir))
+            rule_ids = [i.rule_id for i in issues]
+            self.assertIn("LAUNCH-003", rule_ids)
+            self.assertNotIn("LAUNCH-001", rule_ids)
+
+    def test_arch_004_generated_plist_without_launch_key(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "Info.plist").write_text(self.APP_PLIST_NO_LAUNCH)
+            (Path(tmpdir) / "App.xcodeproj").mkdir()
+            (Path(tmpdir) / "App.xcodeproj" / "project.pbxproj").write_text(
+                "GENERATE_INFOPLIST_FILE = YES;"
+            )
+            issues = check_launch_screens(Path(tmpdir))
+            rule_ids = [i.rule_id for i in issues]
+            self.assertIn("LAUNCH-001", rule_ids)
+            self.assertIn("ARCH-004", rule_ids)
+
+    def test_extension_plist_not_audited_for_launch(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "Info.plist").write_text(
+                "<plist><dict><key>CFBundlePackageType</key><string>XPC!</string>"
+                "<key>NSExtension</key><dict/></dict></plist>"
+            )
+            issues = check_launch_screens(Path(tmpdir))
+            self.assertEqual(issues, [])
+
+
+class TestExtensionAndSDKChecks(unittest.TestCase):
+    """Multi-target (EXT-001) and third-party SDK (SDK-001/002) checks."""
+
+    def test_ext_001_extension_target_detected(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            widget = Path(tmpdir) / "Widget"
+            widget.mkdir()
+            (widget / "Info.plist").write_text(
+                "<plist><dict><key>CFBundlePackageType</key><string>XPC!</string>"
+                "<key>NSExtension</key><dict><key>NSExtensionPointIdentifier</key>"
+                "<string>com.apple.widgetkit-extension</string></dict></dict></plist>"
+            )
+            issues = check_extensions(Path(tmpdir))
+            self.assertEqual([i.rule_id for i in issues], ["EXT-001"])
+
+    def test_sdk_001_known_sdks_and_manifest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / "Podfile.lock").write_text(
+                "PODS:\n  - FBSDKCoreKit (18.2.0)\n  - Firebase/Analytics (11.0.0)\n  - Alamofire (5.9.0)\n"
+            )
+            issues = check_third_party_sdks(Path(tmpdir))
+            rule_ids = [i.rule_id for i in issues]
+            self.assertEqual(rule_ids.count("SDK-001"), 2)  # Facebook + Firebase
+            self.assertIn("SDK-002", rule_ids)
+
+    def test_sdk_no_manifest_no_issue(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            issues = check_third_party_sdks(Path(tmpdir))
+            self.assertEqual(issues, [])
+
+
+class TestCoverageLedgerConsistency(unittest.TestCase):
+    """The coverage ledger is the zero-omission source of truth: every auto-detected
+    item must reference scanner rule IDs that actually exist."""
+
+    def test_ledger_auto_rule_ids_exist_in_scanner(self):
+        import json
+
+        ledger_path = Path(__file__).parent / "adaptation-ledger.json"
+        self.assertTrue(ledger_path.exists(), "adaptation-ledger.json must exist")
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+
+        scanner_rule_ids = {r["id"] for r in RULES} | PROJECT_RULE_IDS
+        items = ledger["items"]
+        self.assertGreaterEqual(len(items), 40, "ledger must cover all adaptation items")
+
+        auto_items = [i for i in items if i["detection"] == "auto"]
+        self.assertGreaterEqual(len(auto_items), 25, "most items must be auto-detected")
+
+        missing = []
+        for item in auto_items:
+            for rule_id in item["rule_ids"]:
+                if rule_id not in scanner_rule_ids:
+                    missing.append((item["id"], rule_id))
+        self.assertEqual(missing, [], f"Ledger references non-existent scanner rules: {missing}")
+
+    def test_ledger_covers_all_three_phases_and_ship_gate(self):
+        import json
+
+        ledger = json.loads((Path(__file__).parent / "adaptation-ledger.json").read_text(encoding="utf-8"))
+        phases = {i["phase"] for i in ledger["items"]}
+        self.assertIn(1, phases)
+        self.assertIn(2, phases)
+        self.assertIn(3, phases)
+        self.assertIn(0, phases)  # SHIP-* completion gate items
 
 
 if __name__ == "__main__":

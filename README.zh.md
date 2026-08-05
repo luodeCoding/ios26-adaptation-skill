@@ -9,8 +9,8 @@
 > **语言**: Objective-C / Swift  
 > **平台**: iOS  
 > **最低 iOS 版本**: 12.0+  
-> **最后更新**: 2026-07-30  
-> **版本**: [v1.9.1](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.zh.md)
+> **最后更新**: 2026-08-03  
+> **版本**: [v1.12.0](https://github.com/luodeCoding/ios26-adaptation-skill/blob/main/CHANGELOG.zh.md)
 
 **本仓库是 AI 适配技能工具，不参与任何项目编译。**
 
@@ -26,20 +26,48 @@
 
 **本仓库的文件不会被主项目引用或编译。** 所有模板代码需要开发者**手动复制**到主项目中使用。
 
+### 适配影响承诺（低冲击保证）
+
+把本技能应用到你的项目（AI 自动执行或手动参考）时，改动是**外科手术式**的：
+
+- ✅ **只动 iOS 26/27 相关代码** — 废弃 API 调用点、SceneDelegate 生命周期架构、Info.plist 适配键、新增适配器文件
+- ✅ **不改 Deployment Target**；保留 iOS 13 之前的兼容路径；所有版本差异用 `#available` / `@available` 包裹
+- ✅ **不顺手重构** — 业务逻辑、无关文件、第三方 SDK 源码（`Pods/`）一律不碰
+- ✅ **对齐苹果官方标准** — 每一项要求均可追溯到苹果官方来源（Upcoming Requirements、Release Notes、WWDC、TN3187）
+- ✅ **可审计流程** — 扫描 → 列出文件清单与理由 → 执行 → 重扫直到 Error 清零
+
+完整声明见：[INTEGRATION.md](INTEGRATION.md) § 适配影响声明。
+
+### 零遗漏保证（覆盖总账）
+
+AI 适配最经典的痛点："一会儿漏这样、一会儿漏那样"。v1.12.0 把这个洞堵死：
+
+- 📋 **50 项覆盖总账**（`scripts/adaptation-ledger.json`）— Phase 1/2/3 的完整任务清单唯一事实源；AI 必须逐项对照执行，不允许凭记忆取子集（[docs/coverage.zh.md](docs/coverage.zh.md)）
+- 🔍 **扫描报告末尾自带人工核对清单 + 上线门禁（SHIP-01~05）** — 无法静态检测的项逐条列出；"完成"的定义是门禁全绿，而不是"代码能编译"
+- 🛡️ **CI 一致性测试** — 总账中每个自动检测项必须对应真实存在的扫描规则；未来漏项会直接测试失败
+
+目标：用本技能改完后，再修一轮 bug，基本就能上线。
+
 ## 关键时间节点
 
 | 日期 | 要求 | 影响 |
 |------|------|------|
-| **2026-04-28** | 必须使用 iOS 26 SDK 构建 | 不合规将无法提交应用更新 |
-| **~2026-09** | Xcode 27 发布，Liquid Glass 强制启用 | `UIDesignRequiresCompatibility` 将被移除 |
+| **2026-04-28**（已生效） | 必须使用 iOS 26 SDK 构建 | 不合规将无法提交应用更新 |
+| **~2026-09** | Xcode 27 发布，Liquid Glass 强制启用 | `UIDesignRequiresCompatibility` 将被移除，Phase 2 窗口正在关闭 |
 | **~2027-04（预估）** | iOS 27 SDK 构建强制（WWDC26 已确认） | 未迁移 UIScene 生命周期的应用**无法启动**；启动屏强制 |
 
 > iOS 27 要求已确认 — 详见 [docs/ios27-preview.md](docs/ios27-preview.md)（第三阶段前瞻）。
+>
+> 📅 **每个时间节点该适配什么，一页看全**：[docs/timeline.zh.md](docs/timeline.zh.md)（[English](docs/timeline.md)）
 
 ## 更新日志
 
 | 版本 | 日期 | 主要更新 |
 |------|------|---------|
+| **[v1.12.0](CHANGELOG.zh.md)** | 2026-08-03 | 零遗漏引擎：50 项覆盖总账、启动屏/扩展/第三方 SDK 扫描规则、报告内置人工核对清单与上线门禁、覆盖矩阵文档 |
+| **[v1.11.0](CHANGELOG.zh.md)** | 2026-08-03 | 推广版发布：适配影响声明（低冲击承诺）、时间线与适配范围总览文档、技能安装指南 |
+| **[v1.10.0](CHANGELOG.zh.md)** | 2026-08-03 | iOS 27 前瞻大更新：Xcode 27 环境要求、代码级 P1 风险、Beta 已知问题、TN3187；SKILL.md 断链修复 |
+| **[v1.9.2](CHANGELOG.zh.md)** | 2026-08-03 | README 补齐 INTEGRATION.md 引用（结构树/链接/文档表） |
 | **[v1.9.1](CHANGELOG.zh.md)** | 2026-07-30 | 第三阶段检查清单（中英）、iOS 26 实战坑测试用例、README/INTEGRATION 文档同步 |
 | **[v1.9.0](CHANGELOG.zh.md)** | 2026-07-30 | iOS 27 前瞻文档（第三阶段）、iOS 26 运行时坑 + iOS 27 前瞻扫描规则、FAQ iOS 27 章节 |
 | **[v1.8.0](CHANGELOG.zh.md)** | 2026-07-30 | `windows`/`statusBarFrame` 扫描规则、第二阶段待办提醒、扫描器崩溃/误报修复 |
@@ -88,13 +116,26 @@
 
 ## 使用方式
 
-### 方式1：AI 助手使用（推荐）
+### 方式1：安装为 AI 技能（推荐）
 
-将本仓库作为 AI 技能加载，AI 读取文档和模板后，直接在主项目中生成/修改代码。
+一次安装，之后只需对 AI 说“帮我适配 iOS 26/27”——它会扫描、规划，并在[低冲击承诺](#适配影响承诺低冲击保证)下直接修改你的主项目。
+
+**Claude Code**（本仓库本身就是 SKILL.md 格式的原生技能）：
+
+```bash
+# 安装到用户技能目录
+git clone https://github.com/luodeCoding/ios26-adaptation-skill.git ~/.claude/skills/ios26-adaptation
+
+# 然后在你的 iOS 项目里直接说：
+#   “帮我适配 iOS 26”
+```
+
+**Qoder / 其他 Agent 工具**：从本仓库的 GitHub 地址安装为插件/技能；
+或者克隆到任意位置后让 Agent 指向该目录——`SKILL.md` + `AGENTS.md` 包含 Agent 所需的全部知识。
 
 ```
 开发者: "帮我适配 iOS 26"
-AI: 读取 SKILL.md → 扫描主项目 → 生成适配代码 → 直接修改主项目文件
+AI: 读取 SKILL.md → 扫描主项目 → 列出文件改动清单 → 修改主项目文件 → 重扫验证
 ```
 
 ### 方式2：开发者手动参考
@@ -113,20 +154,25 @@ cat ios26-adaptation-skill/templates/swift/SceneDelegate.swift
 python3 ios26-adaptation-skill/scripts/ios26-scanner.py /path/to/your/ios/project
 ```
 
+> 两种方式的详细工作流、注意事项和文件用途表见 [INTEGRATION.md](INTEGRATION.md)。
+
 ## 项目结构
 
 ```
 ios26-adaptation-skill/
-├── README.md              # 本文件
-├── README.zh.md           # 中文版
+├── README.md              # 英文版
+├── README.zh.md           # 本文件（中文版）
 ├── SKILL.md               # 📘 AI 核心技能文档（详细适配指南）
 ├── AGENTS.md              # 🤖 Claude Code Agent 使用指南
+├── INTEGRATION.md         # 🔗 使用说明（本仓库与主项目的关系）
 ├── CHANGELOG.md           # 版本历史（英文）
 ├── CHANGELOG.zh.md        # 版本历史（中文）
 ├── LICENSE                # MIT 许可证
 │
 ├── docs/                  # 📚 文档
 │   ├── faq.md             # 常见问题
+│   ├── coverage.md / .zh.md # 50 项覆盖矩阵（零遗漏总账镜像）
+│   ├── timeline.md / .zh.md # iOS 26/27 时间线与各阶段适配范围
 │   ├── testing-guide.md   # 测试指南
 │   ├── sdk-compatibility.md # 第三方 SDK 兼容性速查表
 │   └── ios27-preview.md   # iOS 27 / Xcode 27 适配前瞻（第三阶段）
@@ -140,8 +186,9 @@ ios26-adaptation-skill/
 │   └── phase3-checklist.md / .zh.md
 │
 ├── scripts/               # 🔍 扫描脚本
-│   ├── ios26-scanner.py   # 废弃 API 扫描器（40+ 条规则）
-│   └── test_scanner.py    # 扫描器单元测试
+│   ├── ios26-scanner.py   # 废弃 API 扫描器（50+ 条规则，三层检测）
+│   ├── adaptation-ledger.json # 覆盖总账：50 项适配项（唯一事实源）
+│   └── test_scanner.py    # 扫描器单元测试 + 总账一致性测试
 │
 └── templates/             # 📋 代码模板（仅参考，不编译）
     ├── PrivacyInfo.xcprivacy  # Privacy Manifest 模板
@@ -165,21 +212,24 @@ ios26-adaptation-skill/
 ### 扫描脚本
 
 ```bash
-# 扫描主项目的废弃 API（40+ 条规则：iOS 26 + iOS 27 前瞻）
+# 扫描主项目的废弃 API（50+ 条规则：iOS 26 + iOS 27 前瞻）
 python3 scripts/ios26-scanner.py /path/to/your/ios/project
 
 # 输出 JSON 报告
 python3 scripts/ios26-scanner.py /path/to/your/ios/project --format json --output report.json
 ```
 
-覆盖范围：窗口访问（`keyWindow` / `windows` / `statusBarFrame`）、SceneDelegate 架构、通知选项、iOS 26 运行时坑（`tabBar` KVC 闪退、`navigationBar addSubview`），以及 iOS 27 前瞻检查（`canOpenURL`、`-ld_classic`、`LSApplicationQueriesSchemes` 上限、ODR、MetricKit）。完整规则参考见 [SKILL.md](SKILL.md)。
+覆盖范围：窗口访问（`keyWindow` / `windows` / `statusBarFrame`）、SceneDelegate 架构、通知选项、iOS 26 运行时坑（`tabBar` KVC 闪退、`navigationBar addSubview`），以及 iOS 27 前瞻检查（`canOpenURL`、`-ld_classic`、`LSApplicationQueriesSchemes` 上限、ODR、MetricKit）。项目级检查新增**启动屏强制项（含生成式 Info.plist）**、App 扩展、第三方 SDK 清单；每份报告末尾附**人工核对清单**与**上线门禁（SHIP-01~05）**。完整规则参考见 [SKILL.md](SKILL.md)，全量适配项矩阵见 [docs/coverage.zh.md](docs/coverage.zh.md)。
 
 ### AI 技能文档
 
 | 文档 | 用途 |
 |------|------|
-| `SKILL.md` | 完整适配指南、决策流程、代码示例 |
-| `AGENTS.md` | Claude Code 工作流、触发条件、检查清单 |
+| `SKILL.md` | 完整适配指南、决策流程、代码示例、AI 影响边界规则 |
+| `AGENTS.md` | Claude Code 工作流、触发条件、检查清单、最小冲击规则 |
+| `INTEGRATION.md` | 使用说明、适配影响声明、文件用途表 |
+| `docs/timeline.md` / `.zh.md` | iOS 26/27 每个时间节点及对应的适配范围 |
+| `docs/coverage.md` / `.zh.md` + `scripts/adaptation-ledger.json` | 50 项覆盖矩阵 — AI 必须逐项执行的零遗漏任务清单 |
 | `.claude/iOS26-适配框架指南.md` | 中文完整框架指南 |
 
 ## 常见误区
